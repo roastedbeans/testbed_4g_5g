@@ -240,10 +240,10 @@ echo -e "${BLUE}Adding default test subscribers...${NC}"
 # Wait for MongoDB to be fully ready
 sleep 5
 
-# Add test subscriber with default credentials
+# Add test subscriber with credentials matching SIM card
 # IMSI: 001010000118896
-# K (KEY): 465B5CE8B199B49FAA5F0A2EE238A6BC
-# OPC: E8ED289DEBA952E4283B54E88E6183CA
+# K (KEY): BD9044E60EFA8AD9052799E65D8AF224
+# OPC: C86FD5618B748B85BBC6515C7AEDB9A4
 cat > /tmp/add_default_subscriber.js << 'EOF'
 db = db.getSiblingDB('open5gs');
 db.subscribers.updateOne(
@@ -274,8 +274,8 @@ db.subscribers.updateOne(
             }]
         }],
         security: {
-            k: "465B5CE8B199B49FAA5F0A2EE238A6BC",
-            opc: "E8ED289DEBA952E4283B54E88E6183CA",
+            k: "BD9044E60EFA8AD9052799E65D8AF224",
+            opc: "C86FD5618B748B85BBC6515C7AEDB9A4",
             amf: "8000",
             sqn: NumberLong(1184)
         },

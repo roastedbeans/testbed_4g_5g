@@ -5,6 +5,7 @@ set -e
 DB_NAME="open5gs"
 COLLECTION="subscribers"
 
+# Default subscriber credentials (matches SIM card):
 # imsi: 001010000118896
 # key: BD9044E60EFA8AD9052799E65D8AF224
 # opc: C86FD5618B748B85BBC6515C7AEDB9A4

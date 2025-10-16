@@ -86,9 +86,9 @@ sudo srsenb /etc/srsran/legitimate/enb_4g.conf
 ### Step 6: Test with UE (2 minutes)
 
 1. Program your test SIM with default subscriber credentials:
-   - **IMSI**: 001010000118896
-   - **Ki**: 465B5CE8B199B49FAA5F0A2EE238A6BC
-   - **OPc**: E8ED289DEBA952E4283B54E88E6183CA
+       - **IMSI**: 001010000118896
+       - **Ki**: BD9044E60EFA8AD9052799E65D8AF224
+       - **OPc**: C86FD5618B748B85BBC6515C7AEDB9A4
 
 2. Insert SIM into test UE
 3. UE should automatically register to the network
@@ -126,8 +126,8 @@ Both SDRs are configured for USB 3.0 (xHCI) operation:
 
 Pre-configured during provisioning:
 - **IMSI**: 001010000118896
-- **Authentication Key**: 465B5CE8B199B49FAA5F0A2EE238A6BC
-- **OPc**: E8ED289DEBA952E4283B54E88E6183CA
+- **Authentication Key (Ki)**: BD9044E60EFA8AD9052799E65D8AF224
+- **OPc**: C86FD5618B748B85BBC6515C7AEDB9A4
 - **Network Access Mode**: 2 (Packet and Circuit)
 - **Subscriber Status**: 0 (Enabled)
 

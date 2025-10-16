@@ -90,8 +90,8 @@ Vagrant.configure("2") do |config|
 
     Default Test Subscriber (Pre-configured):
       IMSI: 001010000118896
-      K:    465B5CE8B199B49FAA5F0A2EE238A6BC
-      OPC:  E8ED289DEBA952E4283B54E88E6183CA
+      Ki:   BD9044E60EFA8AD9052799E65D8AF224
+      OPc:  C86FD5618B748B85BBC6515C7AEDB9A4
 
     Subscriber Management:
       sudo subscriber.sh list              # List all subscribers
