@@ -1,0 +1,136 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+#####################################################################
+# FALSE BASE STATION - Vagrant Configuration
+#
+# VM for false/rogue cellular network base station
+# Components: srsRAN 4G/5G (rogue) + LibreSDR B220 mini
+# NO CORE NETWORK
+#
+# Network: 192.168.56.11
+# SDR Device: LibreSDR B220 #2 (USB passthrough required)
+#
+# ⚠️  WARNING: For RESEARCH and EDUCATIONAL use ONLY
+# ⚠️  Unauthorized operation is ILLEGAL
+#####################################################################
+
+Vagrant.configure("2") do |config|
+  # Base box - Ubuntu 22.04 LTS (Jammy Jellyfish)
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.hostname = "false-bs"
+
+  # Network configuration - BRIDGED MODE
+  # VM will get IP from your host network's DHCP server
+  # Accessible from any device on your local network
+  config.vm.network "public_network", bridge: "enp4s0"
+
+  # VM resources
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "false-base-station"
+    vb.memory = "2048"
+    vb.cpus = 2
+    
+    # Enable USB controller
+    vb.customize ["modifyvm", :id, "--usb", "on"]
+    # Enable USB 3.0 controller (xHCI) for better SDR performance
+    vb.customize ["modifyvm", :id, "--usbxhci", "on"]
+    
+    # USB passthrough for LibreSDR B220 #2
+    # Detected devices: Bus 001 Device 010 & 011 (both serial: 0000000004BE)
+    # Since serial numbers are identical, we use the same filter
+    # VirtualBox will assign the OTHER device (not used by legitimate VM)
+    
+    # Method 1: Automatic filter (VirtualBox will choose second device)
+    vb.customize ["usbfilter", "add", "0",
+      "--target", :id,
+      "--name", "LibreSDR B220 False",
+      "--vendorid", "0x2500",
+      "--productid", "0x0020"]
+    
+    # Method 2: Manual selection - if above doesn't work
+    # Start legitimate VM first, then this VM
+    # Manually attach the OTHER USRP B210 via VirtualBox menu:
+    # Devices > USB > Ettus Research LLC USRP B210
+    
+    puts "=" * 60
+    puts "⚠️  WARNING: FALSE BASE STATION VM"
+    puts "=" * 60
+    puts "This VM is for RESEARCH PURPOSES ONLY"
+    puts "Unauthorized operation is ILLEGAL"
+    puts ""
+    puts "✓ USB Passthrough Configured for False BS"
+    puts "Device: USRP B210 (VendorID: 0x2500, ProductID: 0x0020)"
+    puts "Serial: 0000000004BE"
+    puts ""
+    puts "⚠️  IMPORTANT: Start legitimate VM FIRST!"
+    puts "This VM will use the OTHER B210 device"
+    puts ""
+    puts "If device doesn't auto-attach:"
+    puts "  VM Menu > Devices > USB > USRP B210 (the other one)"
+    puts "=" * 60
+  end
+
+  # Shared folders
+  config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
+  config.vm.synced_folder "../shared", "/vagrant/shared", create: true
+  config.vm.synced_folder "./configs", "/vagrant/configs", create: true
+  config.vm.synced_folder "./scripts", "/vagrant/scripts", create: true
+  config.vm.synced_folder "./install", "/vagrant/install", create: true
+
+  # Provisioning
+  config.vm.provision "shell", path: "provision.sh", run: "always"
+
+  # Post-provisioning message
+  config.vm.post_up_message = <<-MSG
+    ╔════════════════════════════════════════════════════════════╗
+    ║                                                            ║
+    ║         ⚠️  FALSE BASE STATION VM Ready ⚠️                  ║
+    ║         RESEARCH AND EDUCATIONAL USE ONLY                  ║
+    ║                                                            ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Access the VM:
+      vagrant ssh
+
+    Network Configuration:
+      Mode: BRIDGED - VM gets IP from your network DHCP
+      Find VM IP: vagrant ssh && ip addr show | grep "inet "
+
+    ⚠️  IMPORTANT OPERATIONAL SEQUENCE:
+      1. Start LEGITIMATE BS VM first
+      2. Wait for UE to connect to legitimate BS
+      3. Then start THIS false BS to demonstrate handover
+
+    Configure Attack:
+      sudo attack_config.sh list           # List attack profiles
+      sudo attack_config.sh set PROFILE    # Set attack mode
+
+    Start False BS:
+      sudo start_false_bs.sh                     # With 15s delay
+      sudo start_false_bs.sh -d 20              # With 20s delay
+      sudo start_false_bs.sh --no-delay         # Immediate start
+      sudo start_false_bs.sh -a downgrade       # Specific attack
+
+    Signal Management:
+      sudo signal_manager.sh preset-handover    # Setup for handover
+      sudo signal_manager.sh ramp-up-false      # Gradual increase
+      sudo adjust_signal.sh demo                # Interactive mode
+
+    Available Attack Profiles:
+      • imsi_catcher  - Capture subscriber identities
+      • downgrade     - Force weak encryption
+      • mitm          - Man-in-the-middle attack
+      • dos           - Denial of service
+
+    ⚠️  LEGAL WARNING:
+    Operating a false base station without authorization is
+    ILLEGAL and may result in criminal prosecution, fines,
+    and imprisonment. Use only in isolated, controlled
+    research environments with proper authorization.
+
+    Check SDR Device:
+      uhd_find_devices                    # Verify SDR #2 detected
+  MSG
+end
+
