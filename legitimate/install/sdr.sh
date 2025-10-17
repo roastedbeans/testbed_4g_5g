@@ -201,33 +201,101 @@ sudo udevadm trigger
 sleep 2
 
 print_info "Checking for connected LibreSDR device..."
+
+# Source SDR device configuration if available
+if [ -f "/vagrant/.sdr_config" ]; then
+    source "/vagrant/.sdr_config"
+fi
+
+# Source SDR device manager utility
+if [ -f "/vagrant/shared/utils/sdr_device_manager.sh" ]; then
+    source "/vagrant/shared/utils/sdr_device_manager.sh"
+fi
+
 if lsusb | grep -i "Ettus Research"; then
     print_success "LibreSDR device detected via USB"
+
+    # Validate device assignment if expected serial is configured
+    if [ -n "$EXPECTED_SDR_SERIAL" ] && command -v validate_sdr_assignment >/dev/null 2>&1; then
+        if ! validate_sdr_assignment "$EXPECTED_SDR_SERIAL" "legitimate"; then
+            print_error "SDR device validation failed"
+            print_info "Please ensure SDR #1 (serial: $EXPECTED_SDR_SERIAL) is connected to this VM"
+            exit 1
+        fi
+    else
+        print_info "SDR device detected but serial validation not configured"
+        print_info "Configure EXPECTED_SDR_SERIAL in /vagrant/.sdr_config for proper validation"
+    fi
 else
     print_error "LibreSDR device not detected. Please ensure device is connected."
-    print_info "Make sure the device is attached to this VM via VirtualBox USB settings"
+    print_info "Make sure SDR #1 is attached to this VM via VirtualBox USB settings"
+    print_info "Run 'source /vagrant/.sdr_config' to see configuration instructions"
     exit 1
 fi
 
 ################################################################################
-# Step 6: Find devices using UHD
+# Step 6: Find and validate assigned device using UHD
 ################################################################################
 print_info "Searching for UHD devices..."
-uhd_find_devices
+
+# Get the specific device assigned to this VM
+if [ -n "$EXPECTED_SDR_SERIAL" ]; then
+    print_info "Looking for device with serial: $EXPECTED_SDR_SERIAL"
+    device_info=$(uhd_find_devices 2>/dev/null | grep "serial: $EXPECTED_SDR_SERIAL")
+
+    if [ -z "$device_info" ]; then
+        print_error "Expected SDR device (serial: $EXPECTED_SDR_SERIAL) not found"
+        print_info "Available devices:"
+        uhd_find_devices 2>/dev/null || echo "No UHD devices detected"
+        print_info "Please ensure SDR #1 is properly assigned to this VM"
+        exit 1
+    else
+        print_success "Found assigned SDR device: $EXPECTED_SDR_SERIAL"
+        uhd_find_devices 2>/dev/null
+    fi
+else
+    print_info "No expected serial configured, showing all devices:"
+    uhd_find_devices 2>/dev/null || echo "No UHD devices detected"
+    print_info "Configure EXPECTED_SDR_SERIAL in /vagrant/.sdr_config for targeted device operation"
+fi
 
 ################################################################################
-# Step 7: Load custom FPGA image to device
+# Step 7: Load custom FPGA image to assigned device only
 ################################################################################
-print_info "Loading custom FPGA image to LibreSDR device..."
-uhd_image_loader --args="type=b200"
-print_success "Custom FPGA image loaded successfully"
+print_info "Loading custom FPGA image to assigned LibreSDR device..."
+
+# Only load FPGA to the specific device assigned to this VM
+if [ -n "$EXPECTED_SDR_SERIAL" ]; then
+    print_info "Loading FPGA image for device serial: $EXPECTED_SDR_SERIAL"
+    if uhd_image_loader --args="serial=$EXPECTED_SDR_SERIAL" 2>/dev/null; then
+        print_success "FPGA image loaded for device $EXPECTED_SDR_SERIAL"
+    else
+        print_info "FPGA loading failed for $EXPECTED_SDR_SERIAL (may already have correct image)"
+    fi
+else
+    print_info "Skipping FPGA loading - no specific device configured"
+    print_info "Configure EXPECTED_SDR_SERIAL in /vagrant/.sdr_config to enable FPGA loading"
+fi
 
 ################################################################################
-# Step 8: Probe device to verify functionality
+# Step 8: Probe assigned device to verify functionality
 ################################################################################
-print_info "Probing LibreSDR device to verify configuration..."
-uhd_usrp_probe --args="type=b200"
-print_success "Device probe completed successfully"
+print_info "Probing assigned LibreSDR device to verify configuration..."
+
+# Only probe the specific device assigned to this VM
+if [ -n "$EXPECTED_SDR_SERIAL" ]; then
+    print_info "Probing device serial: $EXPECTED_SDR_SERIAL"
+    if uhd_usrp_probe --args="serial=$EXPECTED_SDR_SERIAL" 2>/dev/null; then
+        print_success "Device $EXPECTED_SDR_SERIAL probe successful"
+    else
+        print_error "Device $EXPECTED_SDR_SERIAL probe failed"
+        exit 1
+    fi
+    print_success "Device probe completed successfully"
+else
+    print_info "Skipping device probe - no specific device configured"
+    print_info "Configure EXPECTED_SDR_SERIAL in /vagrant/.sdr_config to enable device probing"
+fi
 
 ################################################################################
 # Cleanup

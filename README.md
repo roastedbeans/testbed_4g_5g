@@ -1,6 +1,6 @@
 # False Base Station Attack Infrastructure
 
-A comprehensive research environment for studying cellular network security through false base station attacks. This project provides two isolated VM environments with dedicated hardware SDRs for controlled security research.
+A comprehensive research environment for studying cellular network security through false base station attacks. This project provides three isolated VM environments with dedicated hardware SDRs for controlled security research.
 
 ## Project Structure
 
@@ -13,12 +13,22 @@ attacks/
 │   ├── validate.sh                 # Setup validation
 │   └── sdr_attach.sh               # SDR device management
 │
-├── legitimate/                     # Legitimate base station VM
+├── legitimate/                     # Primary legitimate base station VM
 │   ├── Vagrantfile
 │   ├── provision.sh
 │   ├── install/                    # Installation scripts
 │   │   ├── sdr.sh                  # SDR drivers
 │   │   ├── open5gs.sh              # Open5GS core network
+│   │   └── srsran-4g.sh            # srsRAN 4G base station
+│   ├── scripts/                    # Runtime scripts
+│   │   └── subscriber.sh           # Subscriber management
+│   └── configs/                    # Configuration files
+│
+├── legitimate2/                    # Secondary legitimate base station VM
+│   ├── Vagrantfile
+│   ├── provision.sh
+│   ├── install/                    # Installation scripts
+│   │   ├── sdr.sh                  # SDR drivers
 │   │   └── srsran-4g.sh            # srsRAN 4G base station
 │   ├── scripts/                    # Runtime scripts
 │   │   └── subscriber.sh           # Subscriber management
@@ -114,7 +124,7 @@ This project is designed **EXCLUSIVELY** for:
 
 ### Key Features
 
-- **Dual VM Architecture**: Separate VMs for legitimate and false base stations
+- **Three VM Architecture**: Separate VMs for primary legitimate, secondary legitimate, and false base stations
 - **4G & 5G Support**: Both LTE and NR technologies
 - **Switchable Modes**: Toggle between 4G and 5G on legitimate BS
 - **Multiple Attack Vectors**: IMSI catching, downgrade, MITM, DoS
@@ -126,7 +136,7 @@ This project is designed **EXCLUSIVELY** for:
 
 ### Hardware Requirements
 
-1. **Two LibreSDR B220 mini SDRs**
+1. **Three LibreSDR B220 mini SDRs**
    - Must be distinguishable (different serial numbers preferred)
    - Proper antennas for your frequency bands
    - USB 3.0 cables
@@ -178,6 +188,8 @@ For detailed info:
 ```bash
 lsusb -v -d 2500:0020 2>&1 | grep -E "idVendor|idProduct|iSerial"
 ```
+
+**⚠️ IMPORTANT**: Each VM requires its own dedicated SDR device. Multiple VMs cannot share the same SDR device. See [SDR Conflict Prevention Guide](docs/SDR_CONFLICT_PREVENTION.md) for detailed setup instructions.
 
 ### 3. Add User to vboxusers Group
 

@@ -1,1 +1,0 @@
-host/validate.sh

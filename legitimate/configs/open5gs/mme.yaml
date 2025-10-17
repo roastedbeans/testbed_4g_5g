@@ -12,10 +12,10 @@ mme:
   freeDiameter: /etc/freeDiameter/mme.conf
   s1ap:
     server:
-      - address: 127.0.1.2
+      - address: 0.0.0.0
   gtpc:
     server:
-      - address: 127.0.0.2
+      - address: 0.0.0.0
     client:
       sgwc:
         - address: 127.0.0.3

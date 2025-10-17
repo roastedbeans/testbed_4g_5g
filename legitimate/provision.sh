@@ -29,7 +29,7 @@ echo ""
 #####################################################################
 # Phase 1: System Setup
 #####################################################################
-echo -e "${BLUE}[1/7] Updating system packages...${NC}"
+echo -e "${BLUE}[1/11] Updating system packages...${NC}"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get upgrade -y -qq
@@ -37,7 +37,7 @@ apt-get upgrade -y -qq
 #####################################################################
 # Phase 2: Install SDR Drivers
 #####################################################################
-echo -e "${BLUE}[2/7] Installing SDR drivers (UHD for LibreSDR B220)...${NC}"
+echo -e "${BLUE}[2/11] Installing SDR drivers (UHD for LibreSDR B220)...${NC}"
 
 # The SDR script must run as vagrant user, not root
 # Copy the script and run it as the vagrant user
@@ -65,7 +65,7 @@ fi
 #####################################################################
 # Phase 3: Install Open5GS
 #####################################################################
-echo -e "${BLUE}[3/8] Installing Open5GS core network...${NC}"
+echo -e "${BLUE}[3/11] Installing Open5GS core network...${NC}"
 
 if [ -f "/vagrant/install/open5gs.sh" ]; then
     cp /vagrant/install/open5gs.sh /tmp/
@@ -79,7 +79,7 @@ fi
 #####################################################################
 # Phase 4: Install Open5GS WebUI
 #####################################################################
-echo -e "${BLUE}[4/8] Installing Open5GS WebUI...${NC}"
+echo -e "${BLUE}[4/11] Installing Open5GS WebUI...${NC}"
 
 if [ -f "/vagrant/install/open5gs_webui.sh" ]; then
     cp /vagrant/install/open5gs_webui.sh /tmp/
@@ -92,7 +92,7 @@ fi
 #####################################################################
 # Phase 5: Install srsRAN 4G
 #####################################################################
-echo -e "${BLUE}[5/8] Installing srsRAN 4G...${NC}"
+echo -e "${BLUE}[5/11] Installing srsRAN 4G...${NC}"
 
 if [ -f "/vagrant/install/srsran-4g.sh" ]; then
     cp /vagrant/install/srsran-4g.sh /tmp/
@@ -106,12 +106,12 @@ fi
 #####################################################################
 # Phase 6: srsRAN 5G - SKIPPED (Focus on 4G only)
 #####################################################################
-echo -e "${YELLOW}[6/8] srsRAN 5G installation skipped (focusing on 4G LTE)${NC}"
+echo -e "${YELLOW}[6/11] srsRAN 5G installation skipped (focusing on 4G LTE)${NC}"
 
 #####################################################################
 # Phase 7: Fix USB Permissions
 #####################################################################
-echo -e "${BLUE}[7/8] Fixing USB permissions for SDR devices...${NC}"
+echo -e "${BLUE}[7/11] Fixing USB permissions for SDR devices...${NC}"
 
 # Add vagrant user to plugdev group for USB access
 usermod -a -G plugdev vagrant 2>/dev/null || true
@@ -133,7 +133,7 @@ echo -e "${GREEN}✓ USB permissions configured${NC}"
 #####################################################################
 # Phase 8: Deploy Configuration Files
 #####################################################################
-echo -e "${BLUE}[8/8] Deploying legitimate BS configurations...${NC}"
+echo -e "${BLUE}[8/11] Deploying legitimate BS configurations...${NC}"
 
 # Create srsRAN config directories
 mkdir -p /etc/srsran/legitimate
@@ -155,9 +155,9 @@ else
 fi
 
 #####################################################################
-# Phase 7: Install Control Scripts
+# Phase 9: Install Control Scripts
 #####################################################################
-echo -e "${BLUE}[7/8] Installing control scripts...${NC}"
+echo -e "${BLUE}[9/11] Installing control scripts...${NC}"
 
 # Create scripts directory
 mkdir -p /opt/scripts
@@ -183,9 +183,9 @@ if ! grep -q "/opt/scripts" /etc/environment; then
 fi
 
 #####################################################################
-# Phase 8: Final Setup and Testing
+# Phase 10: Final Setup and Testing
 #####################################################################
-echo -e "${BLUE}[8/8] Final setup and testing...${NC}"
+echo -e "${BLUE}[10/11] Final setup and testing...${NC}"
 
 # Set default mode to 4G
 echo -e "${BLUE}Setting default mode to 4G...${NC}"
@@ -221,9 +221,9 @@ echo "  ✅ All configuration files deployed"
 echo "  ✅ Control scripts installed"
 echo ""
 #####################################################################
-# Phase 9: Install Subscriber Management Script
+# Phase 11: Install Subscriber Management Script
 #####################################################################
-echo -e "${BLUE}[8/8] Installing subscriber management script...${NC}"
+echo -e "${BLUE}[11/11] Installing subscriber management script...${NC}"
 
 # Copy subscriber.sh to /usr/local/bin
 if [ -f "/vagrant/scripts/subscriber.sh" ]; then

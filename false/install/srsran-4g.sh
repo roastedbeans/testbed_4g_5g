@@ -10,7 +10,8 @@ echo "=== srsRAN 4G Setup Script ==="
 # Install dependencies for srsRAN 4G
 echo "Installing srsRAN 4G dependencies..."
 sudo apt-get install cmake make gcc-11 g++-11 pkg-config libfftw3-dev \
-    libmbedtls-dev libboost-program-options-dev libboost-system-dev libconfig++-dev libsctp-dev git -y
+    libmbedtls-dev libboost-program-options-dev libboost-system-dev libboost-thread-dev \
+    libboost-filesystem-dev libboost-test-dev libconfig++-dev libsctp-dev git -y
 
 # Set GCC version
 export CC=$(which gcc-11)

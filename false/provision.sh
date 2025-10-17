@@ -47,7 +47,7 @@ echo ""
 #####################################################################
 # Phase 1: System Setup
 #####################################################################
-echo -e "${BLUE}[1/6] Updating system packages...${NC}"
+echo -e "${BLUE}[1/7] Updating system packages...${NC}"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get upgrade -y -qq
@@ -55,7 +55,7 @@ apt-get upgrade -y -qq
 #####################################################################
 # Phase 2: Install SDR Drivers
 #####################################################################
-echo -e "${BLUE}[2/6] Installing SDR drivers (UHD for LibreSDR B220 #2)...${NC}"
+echo -e "${BLUE}[2/7] Installing SDR drivers (UHD for LibreSDR B220 #3)...${NC}"
 
 # The SDR script must run as vagrant user, not root
 # Copy the script and run it as the vagrant user
@@ -83,7 +83,7 @@ fi
 #####################################################################
 # Phase 3: Install srsRAN 4G (NO CORE NETWORK)
 #####################################################################
-echo -e "${BLUE}[3/6] Installing srsRAN 4G (rogue eNodeB only)...${NC}"
+echo -e "${BLUE}[3/7] Installing srsRAN 4G (rogue eNodeB only)...${NC}"
 
 if [ -f "/vagrant/install/srsran-4g.sh" ]; then
     cp /vagrant/install/srsran-4g.sh /tmp/
@@ -100,12 +100,12 @@ fi
 #####################################################################
 # Phase 4: srsRAN 5G - SKIPPED (Focus on 4G only)
 #####################################################################
-echo -e "${YELLOW}[4/6] srsRAN 5G installation skipped (focusing on 4G LTE)${NC}"
+echo -e "${YELLOW}[4/7] srsRAN 5G installation skipped (focusing on 4G LTE)${NC}"
 
 #####################################################################
 # Phase 5: Fix USB Permissions
 #####################################################################
-echo -e "${BLUE}[5/6] Fixing USB permissions for SDR devices...${NC}"
+echo -e "${BLUE}[5/7] Fixing USB permissions for SDR devices...${NC}"
 
 # Add vagrant user to plugdev group for USB access
 usermod -a -G plugdev vagrant 2>/dev/null || true
@@ -127,18 +127,18 @@ echo -e "${GREEN}✓ USB permissions configured${NC}"
 #####################################################################
 # Phase 6: Deploy Rogue Configuration Files
 #####################################################################
-echo -e "${BLUE}[6/6] Deploying false BS (rogue) configurations...${NC}"
+echo -e "${BLUE}[6/7] Deploying false BS (rogue) configurations...${NC}"
 
 # Create srsRAN config directories
 mkdir -p /etc/srsran/false
 
-# Copy 4G rogue configurations
-if [ -d "/vagrant/configs/srsran" ]; then
-    cp /vagrant/configs/srsran/enb.conf /etc/srsran/false/enb.conf 2>/dev/null || true
-    cp /vagrant/configs/srsran/rr.conf /etc/srsran/false/ 2>/dev/null || true
-    cp /vagrant/configs/srsran/rb.conf /etc/srsran/false/ 2>/dev/null || true
-    cp /vagrant/configs/srsran/sib.conf /etc/srsran/false/ 2>/dev/null || true
-    echo -e "${GREEN}✓ 4G rogue configurations deployed${NC}"
+# Copy 4G attack profile configurations
+if [ -d "/vagrant/configs/attack_profiles" ]; then
+    cp /vagrant/configs/attack_profiles/enb_4g_rogue.conf /etc/srsran/false/enb.conf 2>/dev/null || true
+    cp /vagrant/configs/attack_profiles/rr.conf /etc/srsran/false/rr.conf 2>/dev/null || true
+    cp /vagrant/configs/attack_profiles/rb.conf /etc/srsran/false/rb.conf 2>/dev/null || true
+    cp /vagrant/configs/attack_profiles/sib.conf /etc/srsran/false/sib.conf 2>/dev/null || true
+    echo -e "${GREEN}✓ 4G attack profile configurations deployed${NC}"
 
     # Copy attack modes configuration
     mkdir -p /opt/configs/false

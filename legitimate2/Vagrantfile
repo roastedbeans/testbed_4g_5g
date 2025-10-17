@@ -4,11 +4,11 @@
 #####################################################################
 # LEGITIMATE BASE STATION #2 - Vagrant Configuration
 #
-# VM for second legitimate cellular network base station
-# Components: Open5GS + srsRAN 4G/5G + LibreSDR B220 mini
+# VM for secondary legitimate cellular network base station
+# Components: srsRAN 4G/5G only (connects to shared MME) + LibreSDR B220 mini
 #
-# Network: 192.168.56.12 (different from first BS)
-# SDR Device: LibreSDR B220 #3 (USB passthrough required)
+# Network: 192.168.56.12
+# SDR Device: LibreSDR B220 #2 (USB passthrough required)
 #####################################################################
 
 Vagrant.configure("2") do |config|
@@ -35,31 +35,41 @@ Vagrant.configure("2") do |config|
     # Enable USB 3.0 controller (xHCI) for better SDR performance
     vb.customize ["modifyvm", :id, "--usbxhci", "on"]
     
-    # USB passthrough for LibreSDR B220 #1
-    # Detected devices: Bus 001 Device 010 & 011 (both serial: 0000000004BE)
-    # Since serial numbers are identical, VirtualBox will automatically assign
-    # one device to each VM. You may need to manually select the correct device
-    # in VirtualBox UI: Devices > USB > USRP B210
-    
-    # Method 1: Automatic filter (VirtualBox will choose first available)
-    vb.customize ["usbfilter", "add", "0",
-      "--target", :id,
-      "--name", "LibreSDR B220 Legitimate2",
-      "--vendorid", "0x2500",
-      "--productid", "0x0020"]
-    
-    # Method 2: Manual selection - if above doesn't work
-    # After VM starts, manually attach via VirtualBox menu:
-    # Devices > USB > Ettus Research LLC USRP B210
-    
+    # USB passthrough for LibreSDR B220 #2 - SECONDARY LEGITIMATE BS (HANDOVER)
+    # ⚠️  IMPORTANT: Each VM needs its own physical SDR device
+    # Multiple VMs cannot share the same USB SDR device
+
+    # AUTOMATIC USB FILTER DISABLED to prevent conflicts between VMs
+    # Manual USB assignment required via VirtualBox GUI
+
     puts "=" * 60
-    puts "✓ USB Passthrough Configured for Legitimate BS"
+    puts "🔌 SDR DEVICE CONFIGURATION - LEGITIMATE2 BS (HANDOVER)"
     puts "=" * 60
-    puts "Device: USRP B210 (VendorID: 0x2500, ProductID: 0x0020)"
-    puts "Serial: 0000000004BE"
+    puts "REQUIRED: Connect SDR Device #2 to this VM"
     puts ""
-    puts "If device doesn't auto-attach:"
-    puts "  VM Menu > Devices > USB > USRP B210"
+    puts "📋 Device Requirements:"
+    puts "  • Hardware: USRP B210 or LibreSDR B220 (DIFFERENT from SDR #1)"
+    puts "  • VendorID: 0x2500, ProductID: 0x0020"
+    puts "  • Serial: [Your SDR #2 serial number - different from SDR #1]"
+    puts ""
+    puts "📋 Manual USB Assignment Steps:"
+    puts "  1. Start legitimate VM first (with SDR #1)"
+    puts "  2. Start this VM: vagrant up legitimate2"
+    puts "  3. Connect SDR #2 to different host USB port"
+    puts "  4. In VirtualBox GUI: VM Menu → Devices → USB"
+    puts "  5. Select: 'Ettus Research LLC USRP B210' (SDR #2)"
+    puts "  6. Verify: vagrant ssh legitimate2 → uhd_find_devices"
+    puts ""
+    puts "⚠️  CONFLICT PREVENTION:"
+    puts "  • SDR #1 is for legitimate (primary) VM only"
+    puts "  • SDR #2 is for legitimate2 (secondary) VM only"
+    puts "  • SDR #3 is for false (rogue) VM only"
+    puts "  • Never connect the same SDR to multiple running VMs"
+    puts ""
+    puts "🔄 HANDOVER SETUP:"
+    puts "  • Start legitimate VM first with SDR #1"
+    puts "  • Then start this VM with SDR #2"
+    puts "  • Both VMs will share the same core network"
     puts "=" * 60
   end
 

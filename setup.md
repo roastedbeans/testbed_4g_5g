@@ -10,7 +10,7 @@ Complete setup instructions for the false base station attack research environme
 - Use only in RF-shielded environments with proper authorization
 
 ### Hardware Requirements
-- **Two LibreSDR B220 mini SDRs** (Ettus Research USRP B210 compatible)
+- **Three LibreSDR B220 mini SDRs** (Ettus Research USRP B210 compatible)
 - **RF-shielded enclosure** (Faraday cage) - **MANDATORY**
 - **Test UE** (phone/modem) with programmable SIM card
 - **USB 3.0 ports** on host system (blue ports)
@@ -23,9 +23,9 @@ Complete setup instructions for the false base station attack research environme
 - **VirtualBox Extension Pack** (download from virtualbox.org)
 
 ### System Requirements
-- **Host RAM**: 16GB+ recommended (8GB VMs + host)
-- **Host CPU**: 4+ cores recommended
-- **Storage**: 50GB+ free space
+- **Host RAM**: 24GB+ recommended (18GB VMs + host)
+- **Host CPU**: 6+ cores recommended
+- **Storage**: 80GB+ free space
 - **USB**: USB 3.0 controller support
 
 ## 🚀 Quick Setup (30 Minutes)
@@ -35,12 +35,13 @@ Complete setup instructions for the false base station attack research environme
 Identify your SDR devices:
 ```bash
 lsusb | grep -i ettus
-# Output should show:
+# Output should show three devices:
 # Bus 001 Device 010: ID 2500:0020 Ettus Research LLC USRP B210
 # Bus 001 Device 011: ID 2500:0020 Ettus Research LLC USRP B210
+# Bus 001 Device 012: ID 2500:0020 Ettus Research LLC USRP B210
 ```
 
-Note the serial numbers (both devices have same serial: `0000000004BE`).
+Note the serial numbers - each device should have a unique identifier.
 
 ### Step 2: USB Setup (2 minutes)
 
@@ -51,39 +52,67 @@ sudo usermod -aG vboxusers $USER
 
 **IMPORTANT**: Log out and log back in for the group change to take effect.
 
-### Step 3: Start Legitimate Base Station (15 minutes)
+### Step 3: Start All VMs (20 minutes)
 
 ```bash
-# Start legitimate BS VM
-./start.sh legitimate
+# Start all three VMs
+./start.sh legitimate   # Primary legitimate BS
+./start.sh legitimate2  # Secondary legitimate BS
+./start.sh false        # False BS
 
-# Wait for provisioning to complete (10-15 minutes)
-# VM will get IP automatically via DHCP
+# Wait for provisioning to complete (15-20 minutes)
+# VMs will get IPs automatically via DHCP
 ```
 
-### Step 4: Verify Setup (5 minutes)
+### Step 4: Manual SDR Assignment (10 minutes)
+
+**IMPORTANT**: Manual SDR assignment is required due to identical hardware.
 
 ```bash
-# SSH into legitimate VM
+# Open VirtualBox Manager and assign SDRs:
+# 1. legitimate-base-station → Attach one USRP B210
+# 2. legitimate-base-station2 → Attach second USRP B210
+# 3. false-base-station → Attach third USRP B210
+```
+
+### Step 5: Verify Setup (5 minutes)
+
+```bash
+# SSH into each VM and verify SDR
 ./ssh.sh legitimate
+uhd_find_devices  # Should show one device
+exit
 
-# Verify SDR device
-uhd_find_devices
+./ssh.sh legitimate2
+uhd_find_devices  # Should show one device
+exit
 
-# Verify subscriber exists
-sudo subscriber.sh list
+./ssh.sh false
+uhd_find_devices  # Should show one device
+exit
 
-# Should show: 001010000118896
+# Verify subscribers in legitimate VM
+./ssh.sh legitimate
+sudo subscriber.sh list  # Should show: 001010000118896
 ```
 
-### Step 5: Start Network (3 minutes)
+### Step 6: Start Networks (5 minutes)
 
 ```bash
-# Start 4G LTE network
+# Start legitimate base station (includes core network)
+./ssh.sh legitimate
 sudo srsenb /etc/srsran/legitimate/enb_4g.conf
+
+# Start legitimate2 base station (connects to shared core)
+./ssh.sh legitimate2
+sudo srsenb /etc/srsran/legitimate/enb_4g.conf
+
+# Start false base station (ready for attacks)
+./ssh.sh false
+sudo /vagrant/false/scripts/start_false_bs.sh
 ```
 
-### Step 6: Test with UE (2 minutes)
+### Step 7: Test with UE (2 minutes)
 
 1. Program your test SIM with default subscriber credentials:
        - **IMSI**: 001010000118896
@@ -106,15 +135,34 @@ Both SDRs are configured for USB 3.0 (xHCI) operation:
 
 ### Network Configuration
 
-#### Legitimate Base Station
-- **IP**: DHCP assigned (typically 192.168.x.x or 10.0.x.x)
+#### Primary Legitimate Base Station (legitimate)
+- **IP**: DHCP assigned (typically 192.168.56.10)
 - **Network Mode**: Bridged
 - **PLMN**: 00101 (MCC=001, MNC=01)
 - **TAC**: 7
-- **EARFCN**: 3400 (Band 7, 2.6 GHz)
+- **EARFCN**: 3450 (Band 7, ~2.64 GHz)
+- **PCI**: 1
 - **Bandwidth**: 10 MHz
 
-#### Open5GS Core Network
+#### Secondary Legitimate Base Station (legitimate2)
+- **IP**: DHCP assigned (typically 192.168.56.12)
+- **Network Mode**: Bridged
+- **PLMN**: 00101 (MCC=001, MNC=01) - Same as primary
+- **TAC**: 7 - Same for handover compatibility
+- **EARFCN**: 3600 (Band 7, ~2.66 GHz)
+- **PCI**: 3 - Different for proper identification
+- **Bandwidth**: 10 MHz
+
+#### False Base Station (false)
+- **IP**: DHCP assigned (typically 192.168.56.11)
+- **Network Mode**: Bridged
+- **PLMN**: Configurable (00101 default, 99970 for rogue)
+- **TAC**: 7
+- **EARFCN**: 3350 (Band 7, ~2.62 GHz)
+- **PCI**: 2
+- **Bandwidth**: 10 MHz
+
+#### Open5GS Core Network (legitimate VM only)
 - **MME IP**: 127.0.1.2
 - **SGWC IP**: 127.0.0.3
 - **SGWU IP**: 127.0.0.4
@@ -215,10 +263,20 @@ Edit configuration files in `/etc/open5gs/`:
 
 ### VM Management
 ```bash
-./start.sh legitimate    # Start legitimate BS
-./stop.sh legitimate     # Stop legitimate BS
-./ssh.sh legitimate      # SSH into legitimate BS
-./validate_setup.sh      # Validate installation
+./start.sh legitimate    # Start primary legitimate BS
+./start.sh legitimate2   # Start secondary legitimate BS
+./start.sh false         # Start false BS
+./start.sh all          # Start all three VMs
+
+./stop.sh legitimate     # Stop primary legitimate BS
+./stop.sh legitimate2    # Stop secondary legitimate BS
+./stop.sh false          # Stop false BS
+
+./ssh.sh legitimate      # SSH into primary legitimate BS
+./ssh.sh legitimate2     # SSH into secondary legitimate BS
+./ssh.sh false           # SSH into false BS
+
+./validate.sh            # Validate all installations
 ```
 
 ### Network Operations

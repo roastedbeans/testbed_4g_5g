@@ -1,0 +1,24 @@
+# SDR Device Configuration for Legitimate2 VM
+# This file contains SDR device settings specific to the legitimate2 base station
+
+# Expected SDR Device Serial Number (change this to match your SDR #2)
+EXPECTED_SDR_SERIAL=""
+
+# SDR Device Type (b200 for USRP B210/B220)
+SDR_TYPE="b200"
+
+# VM Role
+VM_ROLE="legitimate2"
+
+# Device Assignment Instructions
+echo "SDR Configuration for Legitimate2 Base Station (Handover)"
+echo "======================================================"
+echo "Expected SDR Serial: $EXPECTED_SDR_SERIAL"
+echo "SDR Type: $SDR_TYPE"
+echo "VM Role: $VM_ROLE"
+echo ""
+echo "To configure your SDR serial number:"
+echo "  1. Connect SDR #2 to this VM (different from SDR #1)"
+echo "  2. Run: uhd_find_devices"
+echo "  3. Copy the serial number and update EXPECTED_SDR_SERIAL above"
+echo "  4. Re-run the SDR setup script"
