@@ -1,0 +1,116 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+#####################################################################
+# LEGITIMATE BASE STATION #2 - Vagrant Configuration
+#
+# VM for second legitimate cellular network base station
+# Components: Open5GS + srsRAN 4G/5G + LibreSDR B220 mini
+#
+# Network: 192.168.56.12 (different from first BS)
+# SDR Device: LibreSDR B220 #3 (USB passthrough required)
+#####################################################################
+
+Vagrant.configure("2") do |config|
+  # Base box - Ubuntu 22.04 LTS (Jammy Jellyfish)
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.hostname = "legitimate-bs2"
+
+  # Network configuration - BRIDGED MODE
+  # VM will get IP from your host network's DHCP server
+  # Accessible from any device on your local network
+  config.vm.network "public_network", bridge: "enp4s0"
+
+  # Note: Port forwarding removed since VM is now directly on your network
+  # Access WebUI directly at: http://<VM_IP>:9999
+
+  # VM resources
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "legitimate-base-station2"
+    vb.memory = "6144"  # 6GB RAM for UHD compilation
+    vb.cpus = 4
+    
+    # Enable USB controller
+    vb.customize ["modifyvm", :id, "--usb", "on"]
+    # Enable USB 3.0 controller (xHCI) for better SDR performance
+    vb.customize ["modifyvm", :id, "--usbxhci", "on"]
+    
+    # USB passthrough for LibreSDR B220 #1
+    # Detected devices: Bus 001 Device 010 & 011 (both serial: 0000000004BE)
+    # Since serial numbers are identical, VirtualBox will automatically assign
+    # one device to each VM. You may need to manually select the correct device
+    # in VirtualBox UI: Devices > USB > USRP B210
+    
+    # Method 1: Automatic filter (VirtualBox will choose first available)
+    vb.customize ["usbfilter", "add", "0",
+      "--target", :id,
+      "--name", "LibreSDR B220 Legitimate2",
+      "--vendorid", "0x2500",
+      "--productid", "0x0020"]
+    
+    # Method 2: Manual selection - if above doesn't work
+    # After VM starts, manually attach via VirtualBox menu:
+    # Devices > USB > Ettus Research LLC USRP B210
+    
+    puts "=" * 60
+    puts "✓ USB Passthrough Configured for Legitimate BS"
+    puts "=" * 60
+    puts "Device: USRP B210 (VendorID: 0x2500, ProductID: 0x0020)"
+    puts "Serial: 0000000004BE"
+    puts ""
+    puts "If device doesn't auto-attach:"
+    puts "  VM Menu > Devices > USB > USRP B210"
+    puts "=" * 60
+  end
+
+  # Shared folders
+  config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
+  config.vm.synced_folder "../shared", "/vagrant/shared", create: true
+  config.vm.synced_folder "./configs", "/vagrant/configs", create: true
+  config.vm.synced_folder "./scripts", "/vagrant/scripts", create: true
+  config.vm.synced_folder "./install", "/vagrant/install", create: true
+
+  # Provisioning
+  config.vm.provision "shell", path: "provision.sh", run: "always"
+
+  # Post-provisioning message
+  config.vm.post_up_message = <<-MSG
+    ╔════════════════════════════════════════════════════════════╗
+    ║                                                            ║
+    ║        Legitimate Base Station VM Ready!                   ║
+    ║                                                            ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Access the VM:
+      vagrant ssh
+
+    Network Configuration:
+      Mode: BRIDGED - VM gets IP from your network DHCP
+      Find VM IP: vagrant ssh && ip addr show | grep "inet "
+
+    Default Test Subscriber (Pre-configured):
+      IMSI: 001010000118896
+      Ki:   BD9044E60EFA8AD9052799E65D8AF224
+      OPc:  C86FD5618B748B85BBC6515C7AEDB9A4
+
+    Subscriber Management:
+      sudo subscriber.sh list              # List all subscribers
+      sudo subscriber.sh count             # Count subscribers
+      sudo subscriber.sh add <imsi> <k> <opc>  # Add new subscriber
+
+    Quick Start:
+      1. SSH into VM: vagrant ssh
+      2. Verify subscriber: sudo subscriber.sh list
+      3. Start 4G LTE: sudo srsenb /etc/srsran/legitimate/enb_4g.conf
+
+    Monitoring:
+      sudo monitor_handover.sh     # Monitor UE handovers
+
+    Important:
+      - Always start this VM FIRST before false BS
+      - Default test subscriber is pre-configured
+      - Check SDR device: uhd_find_devices
+      - Use subscriber.sh to add more test UEs
+  MSG
+end
+

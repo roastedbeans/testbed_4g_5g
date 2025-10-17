@@ -134,7 +134,7 @@ mkdir -p /etc/srsran/false
 
 # Copy 4G rogue configurations
 if [ -d "/vagrant/configs/srsran" ]; then
-    cp /vagrant/configs/srsran/enb.conf /etc/srsran/false/enb_4g_rogue.conf 2>/dev/null || true
+    cp /vagrant/configs/srsran/enb.conf /etc/srsran/false/enb.conf 2>/dev/null || true
     cp /vagrant/configs/srsran/rr.conf /etc/srsran/false/ 2>/dev/null || true
     cp /vagrant/configs/srsran/rb.conf /etc/srsran/false/ 2>/dev/null || true
     cp /vagrant/configs/srsran/sib.conf /etc/srsran/false/ 2>/dev/null || true

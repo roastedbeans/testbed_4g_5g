@@ -374,7 +374,7 @@ cell_list =
     tac = 0x0007;
     pci = 1;
     // root_seq_idx = 204;
-    dl_earfcn = 3350;
+    dl_earfcn = 3740;
     //ul_earfcn = 21400;
     ho_active = false;
     //meas_gap_period = 0; // 0 (inactive), 40 or 80
@@ -397,7 +397,7 @@ cell_list =
     (
       {
         eci = 0x19C02;
-        dl_earfcn = 2850;
+        dl_earfcn = 3666;
         pci = 2;
         //direct_forward_path_available = false;
         //allowed_meas_bw = 6;

@@ -115,14 +115,14 @@ pre_flight_checks() {
     # Check configuration files
     echo -n "Checking configuration files... "
     if [ "$MODE" == "4g" ]; then
-        if [ -f "$CONFIG_DIR/enb_4g_rogue.conf" ]; then
+        if [ -f "$CONFIG_DIR/enb.conf" ]; then
             echo -e "${GREEN}✓ 4G configuration found${NC}"
         else
             echo -e "${RED}✗ 4G configuration not found${NC}"
             exit 1
         fi
     else
-        if [ -f "$CONFIG_DIR/gnb_5g_rogue.yml" ]; then
+        if [ -f "$CONFIG_DIR/gnb.conf" ]; then
             echo -e "${GREEN}✓ 5G configuration found${NC}"
         else
             echo -e "${RED}✗ 5G configuration not found${NC}"
@@ -192,7 +192,7 @@ start_4g_false_bs() {
     echo -e "${YELLOW}Starting 4G False Base Station (rogue eNodeB)...${NC}"
     echo ""
     
-    local config_file="${CUSTOM_CONFIG:-$CONFIG_DIR/enb_4g_rogue.conf}"
+    local config_file="${CUSTOM_CONFIG:-$CONFIG_DIR/enb.conf}"
     local log_file="$LOG_DIR/false_enb_$(date +%Y%m%d_%H%M%S).log"
     
     echo "Configuration: $config_file"
@@ -208,7 +208,7 @@ start_5g_false_bs() {
     echo -e "${YELLOW}Starting 5G False Base Station (rogue gNodeB)...${NC}"
     echo ""
     
-    local config_file="${CUSTOM_CONFIG:-$CONFIG_DIR/gnb_5g_rogue.yml}"
+    local config_file="${CUSTOM_CONFIG:-$CONFIG_DIR/gnb.conf}"
     local log_file="$LOG_DIR/false_gnb_$(date +%Y%m%d_%H%M%S).log"
     
     echo "Configuration: $config_file"
