@@ -1,6 +1,6 @@
 #!/bin/bash
 # Cellular Base Station Test Infrastructure - Centralized Management
-# Usage: ./start.sh [legitimate|legitimate2|false|both|all]
+# Usage: ./start.sh [legitimate|legitimate_5g|false|both|all]
 
 set -e
 
@@ -14,32 +14,50 @@ NC='\033[0m'
 show_help() {
     echo -e "${BLUE}Cellular Base Station Test Infrastructure${NC}"
     echo ""
-    echo "Usage: $0 [legitimate|legitimate2|false|both|all]"
+    echo "Usage: $0 [legitimate|legitimate_5g|false|both|all]"
     echo ""
     echo "Commands:"
-    echo "  legitimate     Start only first legitimate base station VM"
-    echo "  legitimate2    Start only second legitimate base station VM"
-    echo "  false          Start only false base station VM"
+    echo "  legitimate     Start 4G legitimate base station VM (SDR #1 & SDR #2)"
+    echo "  legitimate_5g  Start 5G legitimate base station VM (SDR #1)"
+    echo "  false          Start false base station VM (SDR #3)"
     echo "  both           Start legitimate and false BS VMs in parallel"
     echo "  all            Start all three VMs in parallel"
     echo "  help           Show this help message"
     echo ""
+    echo "⚠️  IMPORTANT: legitimate and legitimate_5g use SDR #1 - run only one!"
+    echo ""
     echo "Examples:"
-    echo "  $0 legitimate     # Start legitimate BS #1 only"
-    echo "  $0 legitimate2    # Start legitimate BS #2 only"
-    echo "  $0 false          # Start false BS only"
-    echo "  $0 both           # Start legitimate #1 + false BS"
+    echo "  $0 legitimate     # Start 4G legitimate BS (SDR #1 & SDR #2)"
+    echo "  $0 legitimate_5g  # Start 5G legitimate BS (SDR #1)"
+    echo "  $0 false          # Start false BS (SDR #3)"
     echo "  $0 all            # Start all three base stations"
 }
 
 case "$1" in
     legitimate)
-        echo -e "${BLUE}Starting legitimate base station #1 VM...${NC}"
+        echo -e "${BLUE}Starting legitimate base station VM...${NC}"
+
+        # Check if legitimate_5g VM is running
+        if pgrep -f "vagrant.*legitimate_5g" >/dev/null 2>&1; then
+            echo -e "${RED}ERROR: legitimate_5g VM appears to be running!${NC}"
+            echo -e "${RED}Stop it first: cd legitimate_5g && vagrant halt${NC}"
+            exit 1
+        fi
+
         cd legitimate && vagrant up
         ;;
-    legitimate2)
-        echo -e "${BLUE}Starting legitimate base station #2 VM...${NC}"
-        cd legitimate2 && vagrant up
+    legitimate_5g)
+        echo -e "${BLUE}Starting legitimate 5G base station VM...${NC}"
+        echo -e "${YELLOW}⚠️  NOTE: This uses SDR #1 - ensure legitimate VM is stopped${NC}"
+
+        # Check if legitimate VM is running
+        if pgrep -f "vagrant.*legitimate" >/dev/null 2>&1; then
+            echo -e "${RED}ERROR: legitimate VM appears to be running!${NC}"
+            echo -e "${RED}Stop it first: cd legitimate && vagrant halt${NC}"
+            exit 1
+        fi
+
+        cd legitimate_5g && vagrant up legitimate_5g
         ;;
     false)
         echo -e "${YELLOW}Starting false base station VM...${NC}"
@@ -47,8 +65,16 @@ case "$1" in
         cd false && vagrant up
         ;;
     both)
-        echo -e "${BLUE}Starting legitimate #1 and false base station VMs...${NC}"
+        echo -e "${BLUE}Starting legitimate (4G) and false base station VMs...${NC}"
         echo -e "${RED}⚠️  WARNING: For RESEARCH and EDUCATIONAL use ONLY${NC}"
+
+        # Check if legitimate_5g VM is running
+        if pgrep -f "vagrant.*legitimate_5g" >/dev/null 2>&1; then
+            echo -e "${RED}ERROR: legitimate_5g VM appears to be running!${NC}"
+            echo -e "${RED}Stop it first: cd legitimate_5g && vagrant halt${NC}"
+            exit 1
+        fi
+
         cd legitimate && vagrant up &
         LEGIT_PID=$!
         cd ../false && vagrant up &
@@ -58,13 +84,12 @@ case "$1" in
     all)
         echo -e "${BLUE}Starting all base station VMs...${NC}"
         echo -e "${RED}⚠️  WARNING: For RESEARCH and EDUCATIONAL use ONLY${NC}"
+        echo -e "${YELLOW}⚠️  NOTE: Starting legitimate (4G) - use legitimate_5g separately${NC}"
         cd legitimate && vagrant up &
-        LEGIT1_PID=$!
-        cd ../legitimate2 && vagrant up &
-        LEGIT2_PID=$!
+        LEGIT_PID=$!
         cd ../false && vagrant up &
         FALSE_PID=$!
-        wait $LEGIT1_PID $LEGIT2_PID $FALSE_PID
+        wait $LEGIT_PID $FALSE_PID
         ;;
     help|--help|-h)
         show_help

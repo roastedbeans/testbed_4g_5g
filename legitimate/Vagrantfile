@@ -5,10 +5,10 @@
 # LEGITIMATE BASE STATION - Vagrant Configuration
 #
 # VM for legitimate cellular network base station
-# Components: Open5GS + srsRAN 4G/5G + LibreSDR B220 mini
+# Components: Open5GS + srsRAN 4G + 2x LibreSDR B220 mini
 #
 # Network: 192.168.56.10
-# SDR Device: LibreSDR B220 #1 (USB passthrough required)
+# SDR Devices: LibreSDR B220 #1 + #2 (USB passthrough required)
 #####################################################################
 
 Vagrant.configure("2") do |config|
@@ -30,39 +30,44 @@ Vagrant.configure("2") do |config|
     vb.memory = "6144"  # 6GB RAM for UHD compilation
     vb.cpus = 4
     
-    # Enable USB controller
-    vb.customize ["modifyvm", :id, "--usb", "on"]
-    # Enable USB 3.0 controller (xHCI) for better SDR performance
+    # USB 3.0 only (xHCI) - disable OHCI/EHCI to prevent conflicts
+    vb.customize ["modifyvm", :id, "--usbohci", "off"]
+    vb.customize ["modifyvm", :id, "--usbehci", "off"]
     vb.customize ["modifyvm", :id, "--usbxhci", "on"]
     
-    # USB passthrough for LibreSDR B220 #1 - PRIMARY LEGITIMATE BS
-    # ⚠️  IMPORTANT: Each VM needs its own physical SDR device
+    # USB passthrough for 2x LibreSDR B220 - LEGITIMATE BS
+    # ⚠️  IMPORTANT: This VM requires TWO physical SDR devices
     # Multiple VMs cannot share the same USB SDR device
 
     # AUTOMATIC USB FILTER DISABLED to prevent conflicts between VMs
-    # Manual USB assignment required via VirtualBox GUI
+    # Manual USB assignment required via VirtualBox GUI or sdr_manager.sh
 
     puts "=" * 60
-    puts "🔌 SDR DEVICE CONFIGURATION - LEGITIMATE BS (PRIMARY)"
+    puts "🔌 SDR DEVICE CONFIGURATION - LEGITIMATE BS (2 DEVICES)"
     puts "=" * 60
-    puts "REQUIRED: Connect SDR Device #1 to this VM"
+    puts "REQUIRED: Connect BOTH SDR Devices #1 and #2 to this VM"
     puts ""
     puts "📋 Device Requirements:"
     puts "  • Hardware: USRP B210 or LibreSDR B220"
     puts "  • VendorID: 0x2500, ProductID: 0x0020"
-    puts "  • Serial: [Your SDR #1 serial number]"
+    puts "  • SDR #1 Serial: C5XA7X9"
+    puts "  • SDR #2 Serial: P44SEGH"
     puts ""
     puts "📋 Manual USB Assignment Steps:"
     puts "  1. Start this VM: vagrant up"
-    puts "  2. Connect SDR #1 to host USB port"
+    puts "  2. Connect both SDRs to host USB ports"
     puts "  3. In VirtualBox GUI: VM Menu → Devices → USB"
-    puts "  4. Select: 'Ettus Research LLC USRP B210' (SDR #1)"
-    puts "  5. Verify: vagrant ssh → uhd_find_devices"
+    puts "  4. Select: 'Ettus Research LLC USRP B210' (SDR #1 - C5XA7X9)"
+    puts "  5. Select: 'Ettus Research LLC USRP B210' (SDR #2 - P44SEGH)"
+    puts "  6. Verify: vagrant ssh → uhd_find_devices"
+    puts ""
+    puts "📋 Alternative - Use SDR Manager:"
+    puts "  ./sdr_manager.sh attach legitimate  # Auto-attach both SDRs"
     puts ""
     puts "⚠️  CONFLICT PREVENTION:"
-    puts "  • SDR #1 is for legitimate (primary) VM only"
-    puts "  • SDR #2 is for legitimate2 (secondary) VM"
-    puts "  • SDR #3 is for false (rogue) VM"
+    puts "  • SDR #1 (C5XA7X9) + SDR #2 (P44SEGH) = legitimate VM"
+    puts "  • SDR #3 (VRFKZRP) = false VM"
+    puts "  • SDR #1 (C5XA7X9) also used by legitimate_5g VM"
     puts "  • Never connect the same SDR to multiple running VMs"
     puts "=" * 60
   end
@@ -103,18 +108,23 @@ Vagrant.configure("2") do |config|
       sudo subscriber.sh add <imsi> <k> <opc>  # Add new subscriber
 
     Quick Start:
-      1. SSH into VM: vagrant ssh
-      2. Verify subscriber: sudo subscriber.sh list
-      3. Start 4G LTE: sudo srsenb /etc/srsran/legitimate/enb_4g.conf
+      1. Attach SDR devices: ./sdr_manager.sh attach legitimate
+      2. SSH into VM: vagrant ssh
+      3. Verify SDRs: uhd_find_devices (should show 2 devices)
+      4. Verify subscriber: sudo subscriber.sh list
+      5. Optional - Enable cross-VM access: sudo /vagrant/shared/utils/configure_mme_network.sh
+      6. Start 4G LTE BS #1: sudo srsenb /etc/srsran/legitimate/enb_4g.conf
+      7. Start 4G LTE BS #2: sudo srsenb /etc/srsran/legitimate2/enb_4g.conf
 
     Monitoring:
       sudo monitor_handover.sh     # Monitor UE handovers
 
     Important:
+      - This VM uses 2 SDR devices (C5XA7X9 + P44SEGH)
       - Always start this VM FIRST before false BS
       - Default test subscriber is pre-configured
-      - Check SDR device: uhd_find_devices
       - Use subscriber.sh to add more test UEs
+      - Two separate base stations can run simultaneously
   MSG
 end
 

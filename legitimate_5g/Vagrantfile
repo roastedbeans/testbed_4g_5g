@@ -1,0 +1,126 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+#####################################################################
+# LEGITIMATE 5G BASE STATION - Vagrant Configuration
+#
+# VM for legitimate 5G cellular network base station
+# Components: Open5GS + srsRAN Project 5G (gNodeB) + LibreSDR B220 mini
+#
+# Network: 192.168.56.10
+# SDR Device: LibreSDR B220 #1 (USB passthrough required)
+# Focus: 5G NR (New Radio) implementation using srsRAN Project
+#####################################################################
+
+Vagrant.configure("2") do |config|
+  # Base box - Ubuntu 22.04 LTS (Jammy Jellyfish)
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.hostname = "legitimate-5g-bs"
+
+  # Network configuration - BRIDGED MODE
+  # VM will get IP from your host network's DHCP server
+  # Accessible from any device on your local network
+  config.vm.network "public_network", bridge: "enp4s0"
+
+  # Note: Port forwarding removed since VM is now directly on your network
+  # Access WebUI directly at: http://<VM_IP>:9999
+
+  # VM resources
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "legitimate-5g-base-station"
+    vb.memory = "6144"  # 6GB RAM for UHD compilation
+    vb.cpus = 4
+    
+    # Enable USB controller
+    vb.customize ["modifyvm", :id, "--usb", "on"]
+    # Enable USB 3.0 controller (xHCI) for better SDR performance
+    vb.customize ["modifyvm", :id, "--usbxhci", "on"]
+    
+    # USB passthrough for LibreSDR B220 #1 - PRIMARY LEGITIMATE BS
+    # ⚠️  IMPORTANT: Each VM needs its own physical SDR device
+    # Multiple VMs cannot share the same USB SDR device
+
+    # AUTOMATIC USB FILTER DISABLED to prevent conflicts between VMs
+    # Manual USB assignment required via VirtualBox GUI
+
+    puts "=" * 60
+    puts "🔌 SDR DEVICE CONFIGURATION - LEGITIMATE 5G BS (PRIMARY)"
+    puts "=" * 60
+    puts "REQUIRED: Connect SDR Device #1 to this VM"
+    puts ""
+    puts "📋 Device Requirements:"
+    puts "  • Hardware: USRP B210 or LibreSDR B220 (5G capable)"
+    puts "  • VendorID: 0x2500, ProductID: 0x0020"
+    puts "  • Serial: [Your SDR #1 serial number]"
+    puts ""
+    puts "📋 Manual USB Assignment Steps:"
+    puts "  1. Start this VM: vagrant up legitimate_5g"
+    puts "  2. Connect SDR #1 to host USB port"
+    puts "  3. In VirtualBox GUI: VM Menu → Devices → USB"
+    puts "  4. Select: 'Ettus Research LLC USRP B210' (SDR #1)"
+    puts "  5. Verify: vagrant ssh legitimate_5g → uhd_find_devices"
+    puts ""
+    puts "⚠️  CONFLICT PREVENTION:"
+    puts "  • SDR #1 is for legitimate_5g (primary 5G) VM only"
+    puts "  • SDR #2 is for legitimate2 (secondary 4G) VM"
+    puts "  • SDR #3 is for false (rogue) VM"
+    puts "  • Never connect the same SDR to multiple running VMs"
+    puts ""
+    puts "🔄 5G NETWORK SETUP:"
+    puts "  • This VM focuses on 5G NR using srsRAN Project"
+    puts "  • Compatible with Open5GS 5G core network"
+    puts "=" * 60
+  end
+
+  # Shared folders
+  config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
+  config.vm.synced_folder "../shared", "/vagrant/shared", create: true
+  config.vm.synced_folder "./configs", "/vagrant/configs", create: true
+  config.vm.synced_folder "./scripts", "/vagrant/scripts", create: true
+  config.vm.synced_folder "./install", "/vagrant/install", create: true
+
+  # Provisioning
+  config.vm.provision "shell", path: "provision.sh", run: "always"
+
+  # Post-provisioning message
+  config.vm.post_up_message = <<-MSG
+    ╔════════════════════════════════════════════════════════════╗
+    ║                                                            ║
+    ║        Legitimate 5G Base Station VM Ready!                ║
+    ║                                                            ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Access the VM:
+      vagrant ssh legitimate_5g
+
+    Network Configuration:
+      Mode: BRIDGED - VM gets IP from your network DHCP
+      Find VM IP: vagrant ssh legitimate_5g && ip addr show | grep "inet "
+
+    Default Test Subscriber (Pre-configured):
+      IMSI: 001010000118896
+      Ki:   BD9044E60EFA8AD9052799E65D8AF224
+      OPc:  C86FD5618B748B85BBC6515C7AEDB9A4
+
+    Subscriber Management:
+      sudo subscriber.sh list              # List all subscribers
+      sudo subscriber.sh count             # Count subscribers
+      sudo subscriber.sh add <imsi> <k> <opc>  # Add new subscriber
+
+    Quick Start (5G NR):
+      1. SSH into VM: vagrant ssh legitimate_5g
+      2. Verify subscriber: sudo subscriber.sh list
+      3. Start 5G: sudo srsenb /etc/srsran/legitimate/gnb_5g.conf
+
+    Monitoring:
+      sudo monitor_handover.sh     # Monitor UE handovers
+
+    Important:
+      - Always start this VM FIRST before other base stations
+      - Default test subscriber is pre-configured
+      - Check SDR device: uhd_find_devices
+      - Use subscriber.sh to add more test UEs
+      - This VM focuses on 5G NR using srsRAN Project
+  MSG
+end
+

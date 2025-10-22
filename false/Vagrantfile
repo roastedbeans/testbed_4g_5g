@@ -9,7 +9,7 @@
 # NO CORE NETWORK
 #
 # Network: 192.168.56.11
-# SDR Device: LibreSDR B220 #2 (USB passthrough required)
+# SDR Device: LibreSDR B220 #3 (USB passthrough required)
 #
 # ⚠️  WARNING: For RESEARCH and EDUCATIONAL use ONLY
 # ⚠️  Unauthorized operation is ILLEGAL
@@ -28,7 +28,7 @@ Vagrant.configure("2") do |config|
   # VM resources
   config.vm.provider "virtualbox" do |vb|
     vb.name = "false-base-station"
-    vb.memory = "2048"
+    vb.memory = "4096"  # Increased from 2048 to 4096 for UHD compilation
     vb.cpus = 2
     
     # Enable USB controller
@@ -43,47 +43,15 @@ Vagrant.configure("2") do |config|
     # AUTOMATIC USB FILTER DISABLED to prevent conflicts between VMs
     # Manual USB assignment required via VirtualBox GUI
 
-    puts "=" * 60
-    puts "⚠️  FALSE BASE STATION - ROGUE SDR CONFIGURATION"
-    puts "=" * 60
-    puts "⚠️  WARNING: RESEARCH AND EDUCATIONAL USE ONLY"
-    puts "   Unauthorized operation is ILLEGAL"
-    puts ""
-    puts "REQUIRED: Connect SDR Device #3 to this VM"
-    puts ""
-    puts "📋 Device Requirements:"
-    puts "  • Hardware: USRP B210 or LibreSDR B220 (DIFFERENT from SDR #1 & #2)"
-    puts "  • VendorID: 0x2500, ProductID: 0x0020"
-    puts "  • Serial: [Your SDR #3 serial number - different from SDR #1 & #2]"
-    puts ""
-    puts "📋 Manual USB Assignment Steps:"
-    puts "  1. Start legitimate VM first (with SDR #1)"
-    puts "  2. Start legitimate2 VM (with SDR #2)"
-    puts "  3. Start this VM: vagrant up false"
-    puts "  4. Connect SDR #3 to different host USB port"
-    puts "  5. In VirtualBox GUI: VM Menu → Devices → USB"
-    puts "  6. Select: 'Ettus Research LLC USRP B210' (SDR #3)"
-    puts "  7. Verify: vagrant ssh false → uhd_find_devices"
-    puts ""
-    puts "⚠️  CONFLICT PREVENTION:"
-    puts "  • SDR #1 is for legitimate (primary) VM only"
-    puts "  • SDR #2 is for legitimate2 (secondary) VM only"
-    puts "  • SDR #3 is for false (rogue) VM only"
-    puts "  • Never connect the same SDR to multiple running VMs"
-    puts ""
-    puts "🔄 ATTACK SEQUENCE:"
-    puts "  • Start legitimate VMs first with SDR #1 & #2"
-    puts "  • Let UE connect to legitimate network"
-    puts "  • Then start false VM with SDR #3 to demonstrate attacks"
-    puts "=" * 60
+    # NOTE: Banner message moved to post_up_message to prevent terminal flooding
+    # See post_up_message below for SDR configuration instructions
   end
 
   # Shared folders
   config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
   config.vm.synced_folder "../shared", "/vagrant/shared", create: true
-  config.vm.synced_folder "./configs", "/vagrant/configs", create: true
-  config.vm.synced_folder "./scripts", "/vagrant/scripts", create: true
-  config.vm.synced_folder "./install", "/vagrant/install", create: true
+  # Note: configs, scripts, and install folders are already included in the main "." sync above
+  # Redundant explicit syncs have been removed to prevent conflicts
 
   # Provisioning
   config.vm.provision "shell", path: "provision.sh", run: "always"
@@ -137,7 +105,7 @@ Vagrant.configure("2") do |config|
     research environments with proper authorization.
 
     Check SDR Device:
-      uhd_find_devices                    # Verify SDR #2 detected
+      uhd_find_devices                    # Verify SDR #3 detected
   MSG
 end
 

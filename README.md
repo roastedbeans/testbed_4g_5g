@@ -13,7 +13,7 @@ attacks/
 │   ├── validate.sh                 # Setup validation
 │   └── sdr_attach.sh               # SDR device management
 │
-├── legitimate/                     # Primary legitimate base station VM
+├── legitimate/                     # Legitimate base station VM (dual BS)
 │   ├── Vagrantfile
 │   ├── provision.sh
 │   ├── install/                    # Installation scripts
@@ -23,16 +23,10 @@ attacks/
 │   ├── scripts/                    # Runtime scripts
 │   │   └── subscriber.sh           # Subscriber management
 │   └── configs/                    # Configuration files
-│
-├── legitimate2/                    # Secondary legitimate base station VM
-│   ├── Vagrantfile
-│   ├── provision.sh
-│   ├── install/                    # Installation scripts
-│   │   ├── sdr.sh                  # SDR drivers
-│   │   └── srsran-4g.sh            # srsRAN 4G base station
-│   ├── scripts/                    # Runtime scripts
-│   │   └── subscriber.sh           # Subscriber management
-│   └── configs/                    # Configuration files
+│       ├── open5gs/                # Open5GS core network configs
+│       └── srsran/                  # srsRAN configurations
+│           ├── legitimate/         # BS #1 configs (SDR #1)
+│           └── legitimate2/        # BS #2 configs (SDR #2)
 │
 ├── false/                          # False base station VM
 │   ├── Vagrantfile
@@ -45,11 +39,10 @@ attacks/
 │   │   └── start_false_bs.sh       # Start rogue base station
 │   └── configs/                    # Configuration files
 │
-├── shared/                         # Shared utilities
-│   └── utils/
-│       ├── adjust_signal.sh        # Signal adjustment
-│       ├── monitor_handover.sh     # Handover monitoring
-│       └── signal_manager.sh       # Signal management
+├── shared/                         # Shared utilities (for VMs)
+│
+├── sdr_manager.sh                  # Unified SDR device management
+├── SDR_MANAGER_README.md           # SDR manager documentation
 │
 ├── README.md                       # Main project documentation
 ├── setup.md                        # Setup and configuration guide
@@ -191,7 +184,29 @@ lsusb -v -d 2500:0020 2>&1 | grep -E "idVendor|idProduct|iSerial"
 
 **⚠️ IMPORTANT**: Each VM requires its own dedicated SDR device. Multiple VMs cannot share the same SDR device. See [SDR Conflict Prevention Guide](docs/SDR_CONFLICT_PREVENTION.md) for detailed setup instructions.
 
-### 3. Add User to vboxusers Group
+### 3. SDR Device Management
+
+Use the unified SDR manager for simple device attachment:
+
+```bash
+# Check available SDR devices
+./sdr_manager.sh check
+
+# Show current device assignments
+./sdr_manager.sh status
+
+# Auto-attach devices to running VMs
+./sdr_manager.sh auto
+
+# Manual attachment
+./sdr_manager.sh attach legitimate
+./sdr_manager.sh attach legitimate2
+./sdr_manager.sh attach false
+```
+
+See [SDR_MANAGER_README.md](SDR_MANAGER_README.md) for complete usage instructions.
+
+### 4. Add User to vboxusers Group
 
 **CRITICAL**: This step is required for USB passthrough to work.
 

@@ -39,11 +39,15 @@ apt-get upgrade -y -qq
 #####################################################################
 echo -e "${BLUE}[2/11] Installing SDR drivers (UHD for LibreSDR B220)...${NC}"
 
+# Note: SDR device attachment happens after VM startup via VirtualBox GUI
+# The SDR setup script will run but may skip device-specific operations
+# if no SDR device is detected during provisioning
+
 # The SDR script must run as vagrant user, not root
 # Copy the script and run it as the vagrant user
 # Try multiple possible paths since /vagrant may not be available
 SDR_SCRIPT=""
-for path in "/vagrant/install/sdr.sh" "/vagrant/sdr.sh" "./sdr.sh" "../sdr.sh" "/home/ubuntu-chan/Documents/Github/airgap/attacks/sdr.sh"; do
+for path in "/vagrant/install/sdr.sh" "/vagrant/sdr.sh" "./sdr.sh" "../sdr.sh"; do
     if [ -f "$path" ]; then
         SDR_SCRIPT="$path"
         break
@@ -54,11 +58,13 @@ if [ -n "$SDR_SCRIPT" ]; then
     cp "$SDR_SCRIPT" /tmp/
     chmod +x /tmp/sdr.sh
 
-    # Run as vagrant user
-    su -c "cd /tmp && ./sdr.sh" vagrant
+    # Run as vagrant user - this will complete UHD driver installation
+    # but may skip device-specific operations if SDR not attached yet
+    echo -e "${YELLOW}Note: SDR device setup will complete after manual USB attachment${NC}"
+    su -c "cd /tmp && VAGRANT_PROVISIONING=1 ./sdr.sh" vagrant
 else
     echo -e "${RED}Error: sdr.sh not found in any expected location${NC}"
-    echo "Searched: /vagrant/sdr.sh, ./sdr.sh, ../sdr.sh, /home/ubuntu-chan/Documents/Github/airgap/attacks/sdr.sh"
+    echo "Searched: /vagrant/install/sdr.sh, /vagrant/sdr.sh, ./sdr.sh, ../sdr.sh"
     exit 1
 fi
 
@@ -135,16 +141,25 @@ echo -e "${GREEN}✓ USB permissions configured${NC}"
 #####################################################################
 echo -e "${BLUE}[8/11] Deploying legitimate BS configurations...${NC}"
 
-# Create srsRAN config directories
+# Create srsRAN config directories for both base stations
 mkdir -p /etc/srsran/legitimate
+mkdir -p /etc/srsran/legitimate2
 
-# Copy 4G configurations
+# Copy 4G configurations for both base stations
 if [ -d "/vagrant/configs/srsran" ]; then
-    cp /vagrant/configs/srsran/enb.conf /etc/srsran/legitimate/enb_4g.conf 2>/dev/null || true
-    cp /vagrant/configs/srsran/rr.conf /etc/srsran/legitimate/ 2>/dev/null || true
-    cp /vagrant/configs/srsran/rb.conf /etc/srsran/legitimate/ 2>/dev/null || true
-    cp /vagrant/configs/srsran/sib.conf /etc/srsran/legitimate/ 2>/dev/null || true
-    echo -e "${GREEN}✓ 4G configurations deployed${NC}"
+    # Copy legitimate (SDR #1) configurations
+    cp /vagrant/configs/srsran/legitimate/enb.conf /etc/srsran/legitimate/enb_4g.conf 2>/dev/null || true
+    cp /vagrant/configs/srsran/legitimate/rr.conf /etc/srsran/legitimate/ 2>/dev/null || true
+    cp /vagrant/configs/srsran/legitimate/rb.conf /etc/srsran/legitimate/ 2>/dev/null || true
+    cp /vagrant/configs/srsran/legitimate/sib.conf /etc/srsran/legitimate/ 2>/dev/null || true
+
+    # Copy legitimate2 (SDR #2) configurations
+    cp /vagrant/configs/srsran/legitimate2/enb.conf /etc/srsran/legitimate2/enb_4g.conf 2>/dev/null || true
+    cp /vagrant/configs/srsran/legitimate2/rr.conf /etc/srsran/legitimate2/ 2>/dev/null || true
+    cp /vagrant/configs/srsran/legitimate2/rb.conf /etc/srsran/legitimate2/ 2>/dev/null || true
+    cp /vagrant/configs/srsran/legitimate2/sib.conf /etc/srsran/legitimate2/ 2>/dev/null || true
+
+    echo -e "${GREEN}✓ 4G configurations deployed for both base stations${NC}"
 
     # Copy Open5GS configurations
     cp /vagrant/configs/open5gs/mme.yaml /etc/open5gs/mme.yaml 2>/dev/null || true
@@ -168,6 +183,9 @@ if [ -d "/vagrant/scripts" ]; then
     cp /vagrant/scripts/signal_manager.sh /opt/scripts/ 2>/dev/null || true
     cp /vagrant/scripts/monitor_handover.sh /opt/scripts/ 2>/dev/null || true
     cp /vagrant/scripts/adjust_signal.sh /opt/scripts/ 2>/dev/null || true
+
+    # Copy MME network configuration script
+    cp /vagrant/shared/utils/configure_mme_network.sh /opt/scripts/ 2>/dev/null || true
     
     # Make scripts executable
     chmod +x /opt/scripts/*.sh 2>/dev/null || true
@@ -315,20 +333,34 @@ echo "  IMSI: 001010000118896"
 echo "  K:    465B5CE8B199B49FAA5F0A2EE238A6BC"
 echo "  OPC:  E8ED289DEBA952E4283B54E88E6183CA"
 echo ""
+echo "📋 SDR Device Setup (Required Next Step):"
+echo "  Option 1 - Manual (VirtualBox GUI):"
+echo "    1. Open VirtualBox GUI"
+echo "    2. Go to VM → Devices → USB"
+echo "    3. Select 'Ettus Research LLC USRP B210' (SDR #1: C5XA7X9)"
+echo "    4. Select 'Ettus Research LLC USRP B210' (SDR #2: P44SEGH)"
+echo "    5. Verify: vagrant ssh -c 'uhd_find_devices' (should show 2 devices)"
+echo ""
+echo "  Option 2 - Automated (SDR Manager):"
+echo "    ./sdr_manager.sh attach legitimate  # Attach both SDRs automatically"
+echo ""
 echo "📋 Subscriber Management Commands:"
 echo "  sudo subscriber.sh list              # List all subscribers"
 echo "  sudo subscriber.sh count             # Count subscribers"
 echo "  sudo subscriber.sh add <imsi> <k> <opc>  # Add new subscriber"
 echo ""
-echo "Quick Start Commands:"
-echo "  # Start 4G LTE network"
+echo "Quick Start Commands (after SDR attachment):"
+echo "  # Start 4G LTE Base Station #1 (SDR #1)"
 echo "  sudo srsenb /etc/srsran/legitimate/enb_4g.conf"
+echo ""
+echo "  # Start 4G LTE Base Station #2 (SDR #2)"
+echo "  sudo srsenb /etc/srsran/legitimate2/enb_4g.conf"
 echo ""
 echo "Control Scripts Available:"
 echo "  signal_manager.sh     # Adjust TX/RX gain"
 echo "  monitor_handover.sh   # Monitor UE handovers"
 echo "  adjust_signal.sh      # Interactive signal control"
 echo ""
-echo -e "${BLUE}Next: Start the false base station VM when ready!${NC}"
+echo -e "${BLUE}Next: Attach SDR device and start base station!${NC}"
 echo ""
 

@@ -1,0 +1,27 @@
+# SDR Device Configuration for False Base Station (Host)
+# This file contains SDR device settings for host installation
+
+# Expected SDR Device Serial Number (change this to match your SDR #3)
+EXPECTED_SDR_SERIAL="VRFKZRP"
+
+# SDR Device Type (b200 for USRP B210/B220)
+SDR_TYPE="b200"
+
+# VM Role
+VM_ROLE="false"
+
+# Device Assignment Instructions
+echo "SDR Configuration for False Base Station (Rogue)"
+echo "=============================================="
+echo "Expected SDR Serial: $EXPECTED_SDR_SERIAL"
+echo "SDR Type: $SDR_TYPE"
+echo "VM Role: $VM_ROLE"
+echo ""
+echo "WARNING: False base station for RESEARCH PURPOSES ONLY"
+echo "Unauthorized operation is ILLEGAL"
+echo ""
+echo "To configure your SDR serial number:"
+echo "  1. Connect SDR #3 to your host system"
+echo "  2. Run: uhd_find_devices"
+echo "  3. Copy the serial number and update EXPECTED_SDR_SERIAL above"
+echo "  4. Re-run the SDR setup script"

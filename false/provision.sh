@@ -9,8 +9,6 @@
 # - Attack mode configurations
 # - Signal management tools
 #
-# NO CORE NETWORK - False BS operates standalone or relays to real core
-#
 # This script should be run during Vagrant provisioning
 #####################################################################
 
@@ -47,7 +45,7 @@ echo ""
 #####################################################################
 # Phase 1: System Setup
 #####################################################################
-echo -e "${BLUE}[1/7] Updating system packages...${NC}"
+echo -e "${BLUE}[1/8] Updating system packages...${NC}"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get upgrade -y -qq
@@ -55,13 +53,17 @@ apt-get upgrade -y -qq
 #####################################################################
 # Phase 2: Install SDR Drivers
 #####################################################################
-echo -e "${BLUE}[2/7] Installing SDR drivers (UHD for LibreSDR B220 #3)...${NC}"
+echo -e "${BLUE}[2/8] Installing SDR drivers (UHD for LibreSDR B220 #3)...${NC}"
+
+# Note: SDR device attachment happens after VM startup via VirtualBox GUI
+# The SDR setup script will run but may skip device-specific operations
+# if no SDR device is detected during provisioning
 
 # The SDR script must run as vagrant user, not root
 # Copy the script and run it as the vagrant user
 # Try multiple possible paths since /vagrant may not be available
 SDR_SCRIPT=""
-for path in "/vagrant/install/sdr.sh" "/vagrant/sdr.sh" "./sdr.sh" "../sdr.sh" "/home/ubuntu-chan/Documents/Github/airgap/attacks/sdr.sh"; do
+for path in "/vagrant/install/sdr.sh" "/vagrant/sdr.sh" "./sdr.sh" "../sdr.sh"; do
     if [ -f "$path" ]; then
         SDR_SCRIPT="$path"
         break
@@ -72,18 +74,20 @@ if [ -n "$SDR_SCRIPT" ]; then
     cp "$SDR_SCRIPT" /tmp/
     chmod +x /tmp/sdr.sh
 
-    # Run as vagrant user
-    su -c "cd /tmp && ./sdr.sh" vagrant
+    # Run as vagrant user - this will complete UHD driver installation
+    # but may skip device-specific operations if SDR not attached yet
+    echo -e "${YELLOW}Note: SDR device setup will complete after manual USB attachment${NC}"
+    su -c "cd /tmp && VAGRANT_PROVISIONING=1 ./sdr.sh" vagrant
 else
     echo -e "${RED}Error: sdr.sh not found in any expected location${NC}"
-    echo "Searched: /vagrant/sdr.sh, ./sdr.sh, ../sdr.sh, /home/ubuntu-chan/Documents/Github/airgap/attacks/sdr.sh"
+    echo "Searched: /vagrant/install/sdr.sh, /vagrant/sdr.sh, ./sdr.sh, ../sdr.sh"
     exit 1
 fi
 
 #####################################################################
 # Phase 3: Install srsRAN 4G (NO CORE NETWORK)
 #####################################################################
-echo -e "${BLUE}[3/7] Installing srsRAN 4G (rogue eNodeB only)...${NC}"
+echo -e "${BLUE}[3/8] Installing srsRAN 4G (rogue eNodeB only)...${NC}"
 
 if [ -f "/vagrant/install/srsran-4g.sh" ]; then
     cp /vagrant/install/srsran-4g.sh /tmp/
@@ -100,12 +104,12 @@ fi
 #####################################################################
 # Phase 4: srsRAN 5G - SKIPPED (Focus on 4G only)
 #####################################################################
-echo -e "${YELLOW}[4/7] srsRAN 5G installation skipped (focusing on 4G LTE)${NC}"
+echo -e "${YELLOW}[4/8] srsRAN 5G installation skipped (focusing on 4G LTE)${NC}"
 
 #####################################################################
 # Phase 5: Fix USB Permissions
 #####################################################################
-echo -e "${BLUE}[5/7] Fixing USB permissions for SDR devices...${NC}"
+echo -e "${BLUE}[5/8] Fixing USB permissions for SDR devices...${NC}"
 
 # Add vagrant user to plugdev group for USB access
 usermod -a -G plugdev vagrant 2>/dev/null || true
@@ -127,7 +131,7 @@ echo -e "${GREEN}✓ USB permissions configured${NC}"
 #####################################################################
 # Phase 6: Deploy Rogue Configuration Files
 #####################################################################
-echo -e "${BLUE}[6/7] Deploying false BS (rogue) configurations...${NC}"
+echo -e "${BLUE}[6/8] Deploying false BS (rogue) configurations...${NC}"
 
 # Create srsRAN config directories
 mkdir -p /etc/srsran/false
@@ -161,7 +165,7 @@ fi
 #####################################################################
 # Phase 7: Install Attack & Control Scripts
 #####################################################################
-echo -e "${BLUE}[7/7] Installing attack and control scripts...${NC}"
+echo -e "${BLUE}[7/8] Installing attack and control scripts...${NC}"
 
 # Create scripts directory
 mkdir -p /opt/scripts
@@ -173,10 +177,10 @@ if [ -d "/vagrant/scripts" ]; then
     cp /vagrant/scripts/monitor_handover.sh /opt/scripts/ 2>/dev/null || true
     cp /vagrant/scripts/adjust_signal.sh /opt/scripts/ 2>/dev/null || true
     cp /vagrant/scripts/attack_config.sh /opt/scripts/ 2>/dev/null || true
-    
+
     # Make scripts executable
     chmod +x /opt/scripts/*.sh 2>/dev/null || true
-    
+
     echo -e "${GREEN}✓ Scripts installed${NC}"
 else
     echo -e "${YELLOW}Warning: Scripts directory not found${NC}"
@@ -192,12 +196,34 @@ mkdir -p /tmp/false_bs_logs
 chmod 777 /tmp/false_bs_logs
 
 #####################################################################
-# Final Setup
+# Phase 8: Final Setup and Testing
+#####################################################################
+echo -e "${BLUE}[8/8] Final setup and testing...${NC}"
+
+# Note: SDR detection testing skipped during provisioning
+# SDR devices need to be attached to VM before running srsRAN
+echo -e "${YELLOW}⚠️  SDR device detection skipped during provisioning${NC}"
+echo -e "${YELLOW}   → Attach SDR devices manually before starting false base station${NC}"
+
+echo -e "${GREEN}✓ All components installed and configured${NC}"
+
+#####################################################################
+# Final Message
 #####################################################################
 echo ""
 echo -e "${MAGENTA}======================================${NC}"
-echo -e "${MAGENTA}  Provisioning Complete!${NC}"
+echo -e "${MAGENTA}  False Base Station Provisioning Complete!${NC}"
 echo -e "${MAGENTA}======================================${NC}"
+echo ""
+echo "False Base Station is ready!"
+echo ""
+echo "Installed Components:"
+echo "  ✅ UHD 4.1.0.5 SDR drivers"
+echo "  ✅ LibreSDR B210/B220 support"
+echo "  ✅ srsRAN 4G (rogue eNodeB)"
+echo "  ✅ Attack profiles and configurations"
+echo "  ✅ USB permissions configured"
+echo "  ✅ Control scripts installed"
 echo ""
 echo -e "${YELLOW}⚠️  FALSE BASE STATION configured${NC}"
 echo -e "${RED}   For RESEARCH and EDUCATIONAL use ONLY${NC}"

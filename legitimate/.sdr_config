@@ -2,7 +2,7 @@
 # This file contains SDR device settings specific to the legitimate base station
 
 # Expected SDR Device Serial Number (change this to match your SDR #1)
-EXPECTED_SDR_SERIAL=""
+EXPECTED_SDR_SERIAL="C5XA7X9"
 
 # SDR Device Type (b200 for USRP B210/B220)
 SDR_TYPE="b200"

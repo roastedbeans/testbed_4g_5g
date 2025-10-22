@@ -1,20 +1,20 @@
-# Handover Simulation Guide - legitimate to legitimate2
+# Handover Simulation Guide - Dual Legitimate Base Stations
 
 ## Overview
 
-This guide explains how to simulate and test **UE handover** between the primary legitimate base station (legitimate VM) and secondary legitimate base station (legitimate2 VM) when devices are in close proximity.
+This guide explains how to simulate and test **UE handover** between two legitimate base stations running on the same VM using dual SDR devices when devices are in close proximity.
 
 ## Prerequisites
 
 ### Hardware Setup
-- ✅ **3 SDR devices** connected and assigned to VMs
-- ✅ **All VMs running** (legitimate, legitimate2, false)
+- ✅ **2 SDR devices** connected to legitimate VM
+- ✅ **VMs running** (legitimate with dual BS, false)
 - ✅ **UE (phone/modem)** with SIM programmed for IMSI 001010000118896
 - ✅ **Antennas positioned** for controlled signal testing
 
 ### Network Configuration
-- ✅ **legitimate VM**: EARFCN 3450, PCI 1, TX gain ~65dB
-- ✅ **legitimate2 VM**: EARFCN 3600, PCI 3, TX gain ~65dB
+- ✅ **legitimate BS #1**: EARFCN 3450, PCI 1, TX gain ~65dB (SDR #1)
+- ✅ **legitimate BS #2**: EARFCN 3600, PCI 3, TX gain ~65dB (SDR #2)
 - ✅ **Shared PLMN**: 00101 (MCC=001, MNC=01)
 - ✅ **Same TAC**: 7 (for handover compatibility)
 - ✅ **Different PCI**: 1 vs 3 (for BS identification)
@@ -26,17 +26,13 @@ This guide explains how to simulate and test **UE handover** between the primary
 ```
 legitimate VM (192.168.56.10)
 ├── Open5GS Core Network (MME, HSS, etc.)
-├── srsRAN eNodeB (enb_id: 0x19B)
-├── Configs: open5gs/ + srsran/
-├── SDR #1 (LibreSDR B220)
-└── Frequency: 885.0 MHz (Band 8)
-
-legitimate2 VM (192.168.56.12)
-├── srsRAN eNodeB only (enb_id: 0x19D)
-├── Connects to legitimate's MME
-├── Configs: srsran/ only
-├── SDR #2 (LibreSDR B220)
-└── Frequency: 895.0 MHz (Band 8)
+├── srsRAN eNodeB #1 (enb_id: 0x19B) - SDR #1
+├── srsRAN eNodeB #2 (enb_id: 0x19D) - SDR #2
+├── Configs: open5gs/ + srsran/legitimate/ + srsran/legitimate2/
+├── SDR #1 (LibreSDR B220) - BS #1
+├── SDR #2 (LibreSDR B220) - BS #2
+├── Frequency BS #1: 885.0 MHz (Band 8)
+└── Frequency BS #2: 895.0 MHz (Band 8)
 
 false VM (192.168.56.11)
 ├── srsRAN eNodeB (enb_id: 0x19C)

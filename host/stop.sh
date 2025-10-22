@@ -1,6 +1,6 @@
 #!/bin/bash
 # Cellular Base Station Test Infrastructure - Centralized Management
-# Usage: ./stop.sh [legitimate|legitimate2|false|both|all]
+# Usage: ./stop.sh [legitimate|legitimate_5g|false|both|all]
 
 set -e
 
@@ -14,32 +14,31 @@ NC='\033[0m'
 show_help() {
     echo -e "${BLUE}Cellular Base Station Test Infrastructure${NC}"
     echo ""
-    echo "Usage: $0 [legitimate|legitimate2|false|both|all]"
+    echo "Usage: $0 [legitimate|legitimate_5g|false|both|all]"
     echo ""
     echo "Commands:"
-    echo "  legitimate     Stop only first legitimate base station VM"
-    echo "  legitimate2    Stop only second legitimate base station VM"
-    echo "  false          Stop only false base station VM"
-    echo "  both           Stop legitimate #1 and false BS VMs in parallel"
+    echo "  legitimate     Stop 4G legitimate base station VM (SDR #1 & SDR #2)"
+    echo "  legitimate_5g  Stop 5G legitimate base station VM (SDR #1)"
+    echo "  false          Stop false base station VM (SDR #3)"
+    echo "  both           Stop legitimate and false BS VMs in parallel"
     echo "  all            Stop all three VMs in parallel"
     echo "  help           Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 legitimate     # Stop legitimate BS #1 only"
-    echo "  $0 legitimate2    # Stop legitimate BS #2 only"
-    echo "  $0 false          # Stop false BS only"
-    echo "  $0 both           # Stop legitimate #1 + false BS"
+    echo "  $0 legitimate     # Stop 4G legitimate BS (SDR #1 & SDR #2)"
+    echo "  $0 legitimate_5g  # Stop 5G legitimate BS (SDR #1)"
+    echo "  $0 false          # Stop false BS (SDR #3)"
     echo "  $0 all            # Stop all three base stations"
 }
 
 case "$1" in
     legitimate)
-        echo -e "${BLUE}Stopping legitimate base station #1 VM...${NC}"
+        echo -e "${BLUE}Stopping legitimate base station #1 & #2 VM...${NC}"
         cd legitimate && vagrant halt
         ;;
-    legitimate2)
-        echo -e "${BLUE}Stopping legitimate base station #2 VM...${NC}"
-        cd legitimate2 && vagrant halt
+    legitimate_5g)
+        echo -e "${BLUE}Stopping legitimate 5G base station VM...${NC}"
+        cd legitimate_5g && vagrant halt legitimate_5g
         ;;
     false)
         echo -e "${YELLOW}Stopping false base station VM...${NC}"
@@ -56,12 +55,12 @@ case "$1" in
     all)
         echo -e "${BLUE}Stopping all base station VMs...${NC}"
         cd legitimate && vagrant halt &
-        LEGIT1_PID=$!
-        cd ../legitimate2 && vagrant halt &
-        LEGIT2_PID=$!
+        LEGIT_PID=$!
+        cd ../legitimate_5g && vagrant halt &
+        LEGIT5G_PID=$!
         cd ../false && vagrant halt &
         FALSE_PID=$!
-        wait $LEGIT1_PID $LEGIT2_PID $FALSE_PID
+        wait $LEGIT_PID $LEGIT5G_PID $FALSE_PID
         ;;
     help|--help|-h)
         show_help

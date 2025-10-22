@@ -1,13 +1,13 @@
 # Legitimate Base Station
 
-This directory contains the legitimate base station VM configuration with full Open5GS core network and srsRAN base stations.
+This directory contains the legitimate base station VM configuration with full Open5GS core network and dual srsRAN 4G base stations.
 
 ## Components
 
 - **Open5GS**: Complete 4G/5G core network implementation
-- **srsRAN 4G**: LTE eNodeB base station
-- **srsRAN 5G**: NR gNodeB base station (optional)
+- **srsRAN 4G (x2)**: Two LTE eNodeB base stations (dual SDR setup)
 - **Open5GS WebUI**: Subscriber management interface
+- **2x SDR Devices**: LibreSDR B220 #1 (C5XA7X9) + #2 (P44SEGH)
 
 ## Quick Start
 
@@ -31,12 +31,22 @@ This directory contains the legitimate base station VM configuration with full O
    - Go to Subscribers section
    - Add test IMSI/IMSI ranges
 
-5. **Start base station:**
+5. **Attach SDR devices:**
+   ```bash
+   # From host machine
+   ./sdr_manager.sh attach legitimate  # Attach both SDRs automatically
+   # OR manually via VirtualBox GUI → Devices → USB
+   ```
+
+6. **Start base stations:**
    ```bash
    vagrant ssh
-   sudo srsenb /etc/srsran/legitimate/enb_4g.conf  # 4G
-   # OR
-   sudo gnb -c /etc/srsran/legitimate/gnb_5g.yml    # 5G
+
+   # Start Base Station #1 (SDR #1 - C5XA7X9)
+   sudo srsenb /etc/srsran/legitimate/enb_4g.conf
+
+   # Start Base Station #2 (SDR #2 - P44SEGH)
+   sudo srsenb /etc/srsran/legitimate2/enb_4g.conf
    ```
 
 ## Configuration
@@ -45,7 +55,7 @@ This directory contains the legitimate base station VM configuration with full O
 
 - **Bridged Mode**: Gets IP from host network DHCP
 - **WebUI Access**: Available from any device on network
-- **SDR Device**: LibreSDR B220 #1 (automatic USB passthrough)
+- **SDR Devices**: LibreSDR B220 #1 (C5XA7X9) + #2 (P44SEGH)
 
 ### Files Structure
 
@@ -76,10 +86,11 @@ legitimate/
 
 ### SDR Issues
 
-1. Check device: `vagrant ssh -c "uhd_find_devices"`
-2. Manual attachment: VirtualBox GUI → Devices → USB → USRP B210
+1. Check devices: `vagrant ssh -c "uhd_find_devices"` (should show 2 devices)
+2. Manual attachment: VirtualBox GUI → Devices → USB → Select both USRP B210 devices
+3. Automated attachment: `./sdr_manager.sh attach legitimate`
 
 ### srsRAN Issues
 
 1. Check installation: `vagrant ssh -c "which srsenb"`
-2. Verify configs: `vagrant ssh -c "ls /etc/srsran/legitimate/"`
+2. Verify configs: `vagrant ssh -c "ls /etc/srsran/legitimate/ /etc/srsran/legitimate2/"`

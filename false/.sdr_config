@@ -2,7 +2,7 @@
 # This file contains SDR device settings specific to the false base station
 
 # Expected SDR Device Serial Number (change this to match your SDR #3)
-EXPECTED_SDR_SERIAL=""
+EXPECTED_SDR_SERIAL="VRFKZRP"
 
 # SDR Device Type (b200 for USRP B210/B220)
 SDR_TYPE="b200"

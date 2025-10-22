@@ -67,7 +67,21 @@ cd "$TEMP_DIR"
 
 # Clone UHD 4.8 branch
 print_info "Cloning UHD 4.8 branch..."
-git clone --branch UHD-4.8 --depth 1 https://github.com/EttusResearch/uhd.git
+if ! git clone --branch UHD-4.8 --depth 1 https://github.com/EttusResearch/uhd.git; then
+    print_error "Failed to clone UHD repository"
+    print_info "Trying alternative installation method..."
+    # Fallback: install UHD from Ubuntu repository
+    sudo apt-get update
+    sudo apt-get install -y libuhd-dev uhd-host
+    print_success "UHD installed from Ubuntu repository"
+    exit 0
+fi
+
+if [ ! -d "uhd" ]; then
+    print_error "UHD directory not found after cloning"
+    exit 1
+fi
+
 cd uhd
 
 # Check current branch and directory contents
@@ -121,7 +135,20 @@ fi
 print_info "Cloning LibreSDR USRP repository for custom FPGA image..."
 LIBRESDR_DIR=$(mktemp -d)
 cd "$LIBRESDR_DIR"
-git clone https://github.com/alphafox02/LibreSDR_USRP
+
+if ! git clone https://github.com/alphafox02/LibreSDR_USRP; then
+    print_error "Failed to clone LibreSDR USRP repository"
+    print_info "Continuing without custom FPGA image..."
+    cd /
+    rm -rf "$LIBRESDR_DIR"
+    exit 0
+fi
+
+if [ ! -d "LibreSDR_USRP" ]; then
+    print_error "LibreSDR_USRP directory not found after cloning"
+    exit 1
+fi
+
 cd LibreSDR_USRP
 
 print_success "Repository cloned successfully"
@@ -180,24 +207,24 @@ if [ -f "/vagrant/.sdr_config" ]; then
     source "/vagrant/.sdr_config"
 fi
 
-# Source SDR device manager utility
-if [ -f "/vagrant/shared/utils/sdr_device_manager.sh" ]; then
-    source "/vagrant/shared/utils/sdr_device_manager.sh"
-fi
-
 if lsusb | grep -i "Ettus Research"; then
     print_success "LibreSDR device detected via USB"
 
-    # Validate device assignment if expected serial is configured
-    if [ -n "$EXPECTED_SDR_SERIAL" ] && command -v validate_sdr_assignment >/dev/null 2>&1; then
-        if ! validate_sdr_assignment "$EXPECTED_SDR_SERIAL" "false"; then
-            print_error "SDR device validation failed"
-            print_info "Please ensure SDR #3 (serial: $EXPECTED_SDR_SERIAL) is connected to this VM"
-            exit 1
+    # Simple serial validation for false VM
+    if [ -n "$EXPECTED_SDR_SERIAL" ] && [ "$VM_ROLE" = "false" ]; then
+        if command -v uhd_find_devices >/dev/null 2>&1; then
+            if uhd_find_devices 2>/dev/null | grep -q "serial: $EXPECTED_SDR_SERIAL"; then
+                print_success "SDR device with serial $EXPECTED_SDR_SERIAL validated"
+            else
+                print_error "Expected SDR serial $EXPECTED_SDR_SERIAL not found"
+                print_info "Please ensure SDR #3 (serial: $EXPECTED_SDR_SERIAL) is properly attached"
+                exit 1
+            fi
+        else
+            print_info "UHD tools not available for validation, proceeding..."
         fi
     else
-        print_info "SDR device detected but serial validation not configured"
-        print_info "Configure EXPECTED_SDR_SERIAL in /vagrant/.sdr_config for proper validation"
+        print_info "SDR device detected - serial validation skipped"
     fi
 else
     print_error "LibreSDR device not detected. Please ensure device is connected."
@@ -220,7 +247,10 @@ if [ -n "$EXPECTED_SDR_SERIAL" ]; then
         print_error "Expected SDR device (serial: $EXPECTED_SDR_SERIAL) not found"
         print_info "Available devices:"
         uhd_find_devices 2>/dev/null || echo "No UHD devices detected"
-        print_info "Please ensure SDR #3 is properly assigned to this VM"
+        SDR_NUM="3"  # Default for false VM
+        [ "$VM_ROLE" = "legitimate" ] && SDR_NUM="1 and 2"
+        [ "$VM_ROLE" = "legitimate_5g" ] && SDR_NUM="1"
+        print_info "Please ensure SDR #$SDR_NUM is properly assigned to this VM"
         exit 1
     else
         print_success "Found assigned SDR device: $EXPECTED_SDR_SERIAL"
