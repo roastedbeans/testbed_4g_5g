@@ -29,8 +29,8 @@ NC='\033[0m'
 # SDR Device UUIDs (update these if your devices change)
 declare -A SDR_UUIDS=(
     ["C5XA7X9"]="f16d7f62-8cab-4289-9b40-7371a82abd74"   # SDR #1 (legitimate & legitimate_5g) - actually reports as C5XA7X9
-    ["P44SEGH"]="10b33e58-1603-44e0-b082-3abad3f193a7"   # SDR #2 (now with legitimate)
-    ["VRFKZRP"]="f16d7f62-8cab-4289-9b40-7371a82abd74"   # SDR #3 (false) - same as C5XA7X9 (needs update)
+    ["P44SEGH"]="a59568f0-2a60-4ae5-bd24-13a27ec981b5"   # SDR #2 (now with legitimate)
+    ["VRFKZRP"]="5e45c89a-1e63-4a00-b779-966363e13d30"   # SDR #3 (false)
 )
 
 # VM to SDR mapping (now supports multiple devices per VM)
