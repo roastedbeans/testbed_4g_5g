@@ -79,6 +79,13 @@ Vagrant.configure("2") do |config|
   config.vm.synced_folder "./scripts", "/vagrant/scripts", create: true
   config.vm.synced_folder "./install", "/vagrant/install", create: true
 
+  # Set timezone to South Korea
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "Setting timezone to Asia/Seoul (South Korea)..."
+    timedatectl set-timezone Asia/Seoul
+    echo "Timezone set to: $(timedatectl | grep 'Time zone')"
+  SHELL
+
   # Provisioning
   config.vm.provision "shell", path: "provision.sh", run: "always"
 
