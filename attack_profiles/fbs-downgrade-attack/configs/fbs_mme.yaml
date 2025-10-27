@@ -37,8 +37,8 @@ mme:
         mnc: 01
       tac: 39321
   security:
-    integrity_order : [ EIA0 ]              # FBS: ONLY null integrity - no protection
-    ciphering_order : [ EEA0 ]              # FBS: ONLY null ciphering - no encryption
+    integrity_order : [ EIA0, EIA1, EIA2, EIA3 ]              # FBS: ONLY null integrity - no protection
+    ciphering_order : [ EEA0, EEA1, EEA2, EEA3 ]              # FBS: ONLY null ciphering - no encryption
   network_name:
     full: Open5GS
     short: Next

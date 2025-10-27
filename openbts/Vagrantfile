@@ -1,0 +1,40 @@
+# Vagrantfile
+Vagrant.configure("2") do |config|
+    config.vm.box = "ubuntu/focal64"
+    
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = "2048"
+      vb.cpus = 2
+    end
+  
+    # USB passthrough for SDR hardware
+    config.vm.provider "virtualbox" do |vb|
+      vb.customize ["modifyvm", :id, "--usb", "on"]
+      vb.customize ["modifyvm", :id, "--usbehci", "on"]
+    end
+  
+    config.vm.provision "shell", inline: <<-SHELL
+      apt-get update
+      apt-get install -y build-essential git autoconf libtool \
+        libosip2-dev libortp-dev libusb-1.0-0-dev libboost-dev \
+        libzmq3-dev sqlite3 libsqlite3-dev
+  
+      # Clone OpenBTS
+      cd /home/vagrant
+      git clone https://github.com/RangeNetworks/openbts.git
+      cd openbts
+  
+      # Install libzmq
+      ./NodeManager/install_libzmq.sh
+  
+      # Build
+      autoreconf -i
+      ./configure
+      make
+  
+      # Setup directories
+      ./apps/setUpFiles.sh
+  
+      chown -R vagrant:vagrant /home/vagrant/openbts
+    SHELL
+  end
